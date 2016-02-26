@@ -1,7 +1,12 @@
 /**
  * @file debug.h
  *
+ * EECS 678 - Project 1
+ * Dylan Dreiling
+ * Hayden Kaustinen
+ * 
  * This file holds useful macros for debugging purposes.
+ * 
  */
 
 /// Set this to 1 to enable debugging mode or 0 to disable debugging mode
