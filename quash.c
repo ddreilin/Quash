@@ -2,6 +2,8 @@
  * @file quash.c
  *
  * Quash's main file
+ * Dylan Dreiling
+ * Hayden Kaustinen
  */
 
 /**************************************************************************
