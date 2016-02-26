@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
   start();
   
   puts("Welcome to Quash!");
-  puts("Type \"exit\" to quit");
+  puts("Type \"exit\" or \"quit\" to quit");
 
   // Main execution loop
   while (is_running() && get_command(&cmd, stdin)) {
@@ -87,11 +87,73 @@ int main(int argc, char** argv) {
     // this while loop. It is just an example.
 
     // The commands should be parsed, then executed.
-    if (!strcmp(cmd.cmdstr, "exit"))
-      terminate(); // Exit Quash
-    else 
-      puts(cmd.cmdstr); // Echo the input string
+    manager(&cmd);
+   
   }
 
   return EXIT_SUCCESS;
+}
+
+//function to parse/manage/execute commands
+void manager(command_t* cmd ){ 
+
+	 //parse until white space, to get command
+
+	 //cd if the first two chars are "cd"
+	 if (!strcmp(cmd->cmdstr, "cd")){
+	 	run_cd( &cmd );
+	 }
+	 
+	 //set 
+	 else if (!strcmp(cmd->cmdstr, "set")){
+	 	run_set( &cmd );
+	 }			
+	 
+	 //echo
+	 else if (!strcmp(cmd->cmdstr, "echo")){
+	 	run_echo( &cmd );
+	 }
+	 
+	 //pwd
+	 else if (!strcmp(cmd->cmdstr, "pwd")){ 	
+	 	run_pwd( &cmd );
+	 }
+	 
+	 //jobs
+	 else if (!strcmp(cmd->cmdstr, "jobs")){
+	 	run_jobs( &cmd );
+	 }
+	
+	 //exit command
+	 else if (!strcmp(cmd->cmdstr, "exit") || !strcmp(cmd->cmdstr, "quit") )
+      terminate(); // Exit Quash
+      
+    //run an executable 
+    else 
+      puts(cmd->cmdstr); // Echo the input string
+}
+
+//function to execute cd
+void run_cd( command_t* cmd ){
+	puts("cd function");
+}
+
+//function to execute set
+void run_set( command_t* cmd ){
+	puts("set funciton");	
+}
+
+//function to execute echo
+void run_echo( command_t* cmd ){
+	puts("echo funciton");
+}
+
+//function to execute pwd
+void run_pwd( command_t* cmd ){
+	puts("pwd funciton");
+}
+
+//function to execute jobs
+void run_jobs( command_t* cmd ){
+	puts("jobs funciton");
 }
