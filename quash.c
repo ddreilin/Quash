@@ -98,34 +98,37 @@ int main(int argc, char** argv) {
 
 //function to parse/manage/execute commands
 void manager(command_t* cmd ){ 
+	
+	 char* tokens = strtok(cmd->cmdstr, " ");
+
 	 
-	 //cd if the first two chars are "cd"
-	 if (!strncmp(cmd->cmdstr, "cd", 2)){
-	 	run_cd( cmd );
+	 //cd if the first two chars are
+	 if (!strcmp(tokens, "cd")){
+	 	run_cd( cmd, tokens );
 	 }
 	 
 	 //set 
-	 else if (!strncmp(cmd->cmdstr, "set", 3)){
-	 	run_set( cmd );
+	 else if (!strcmp(tokens, "set")){
+	 	run_set( cmd, tokens);
 	 }			
 	 
 	 //echo
-	 else if (!strncmp(cmd->cmdstr, "echo", 4)){
-	 	run_echo( cmd );
+	 else if (!strcmp(tokens, "echo")){
+	 	run_echo( cmd, tokens );
 	 }
 	 
 	 //pwd
-	 else if (!strncmp(cmd->cmdstr, "pwd", 3)){ 	
-	 	run_pwd( cmd );
+	 else if (!strcmp(tokens, "pwd")){ 	
+	 	run_pwd( cmd, tokens );
 	 }
 	 
 	 //jobs
-	 else if (!strncmp(cmd->cmdstr, "jobs", 4)){
-	 	run_jobs( cmd );
+	 else if (!strcmp(tokens, "jobs")){
+	 	run_jobs( cmd, tokens );
 	 }
 	
 	 //exit command
-	 else if (!strncmp(cmd->cmdstr, "exit", 4) || !strncmp(cmd->cmdstr, "quit", 4) )
+	 else if (!strcmp(tokens, "exit") || !strcmp(tokens, "quit") )
       terminate(); // Exit Quash
       
     //run an executable 
@@ -133,65 +136,97 @@ void manager(command_t* cmd ){
       puts(cmd->cmdstr); // Echo the input string
 }
 
+
+/*******************************************************
+*
+*
+* Run Command functions
+*
+*
+*******************************************************/
+
 //function to execute cd
-void run_cd( command_t* cmd ){
+void run_cd( command_t* cmd, char* tokens ){
 	puts("cd function");
+	tokens = strtok(NULL, "/");
+	
+	//go to home
+	if(tokens == NULL){
+		//go to home	
+	}
+	
+	//argument given, watch for bad input?
+	else{
+		puts(tokens);	
+	}	
+	
+	
 }
 
 //function to execute set
-void run_set( command_t* cmd ){
-	puts("set function");
+void run_set( command_t* cmd, char* tokens ){
+	puts("set function");	
+	tokens = strtok(NULL, "=");
 	
 	//PATH variable
-	if (!strncmp(cmd->cmdstr, "set PATH=", 9)){
-		puts("Setting PATH variable");	
-		strcpy(path, cmd->cmdstr);//need to cut off first 9
+	if (!strcmp(tokens, "PATH")){
+		puts("Setting PATH variable");
+		tokens = strtok(NULL, "");
+		strcpy(path, tokens);
 	}
 	
 	//HOME Variable
-	else if (!strncmp(cmd->cmdstr, "set HOME=", 9)){
+	else if (!strcmp(tokens, "HOME")){
 		puts("Setting HOME variable");
-		strcpy(home, cmd->cmdstr); //need to cut off first 9
-			
+		tokens = strtok(NULL, "");
+		puts(tokens);	
+		strcpy(home, tokens);
 	}
 	
 	//default
 	else{
-		puts("Unknown variable");	
+		puts("Incorrect set syntax");	
 	}
 		
 }
 
 //function to execute echo
-void run_echo( command_t* cmd ){
+void run_echo( command_t* cmd, char* tokens){
 	puts("echo function");
+	tokens = strtok(NULL, "");
 	
 	//PATH variable
-	if (!strncmp(cmd->cmdstr, "echo $PATH", 10)){
+	if (!strcmp(tokens, "$PATH")){
 		puts(path);	
 	}
 	
 	//HOME Variable
-	else if (!strncmp(cmd->cmdstr, "echo $HOME", 10)){
+	else if (!strcmp(tokens, "$HOME")){
 		puts(home);
 			
 	}
 	
 	//default
 	else{
-		puts("Unknown variable");	
+		puts("Incorrect echo syntax");	
 	}
 	
 }
 
 //function to execute pwd
-void run_pwd( command_t* cmd ){
+void run_pwd( command_t* cmd, char* tokens  ){
 	puts("pwd function");
 }
 
 //function to execute jobs
-void run_jobs( command_t* cmd ){
+void run_jobs( command_t* cmd, char* tokens  ){
 	puts("jobs function");
 }
 
-
+/*******************************************************
+*
+*
+* Helper Functions
+*
+*
+*******************************************************/
