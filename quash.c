@@ -27,6 +27,7 @@
 static bool running;
 char home[MAX_COMMAND_LENGTH];
 char path[MAX_COMMAND_LENGTH];
+char cwd[MAX_COMMAND_LENGTH];
 char* token;
 char *getcwd(char *buf, size_t size);
 
@@ -80,7 +81,10 @@ bool get_command(command_t* cmd, FILE* in) {
  */
 int main(int argc, char** argv) { 
   command_t cmd; //< Command holder argument
-  strcpy(home, "/home");  
+  
+  //initialize variables.  
+  strcpy(home, "/home");
+  getcwd(cwd, sizeof(cwd)); 
   
   start();
   
@@ -138,8 +142,9 @@ void manager(command_t* cmd ){
       terminate(); // Exit Quash
       
     //run an executable 
-    else 
-      puts(cmd->cmdstr); // Echo the input string
+    else{
+    	run_exec(cmd, tokens);
+    } 
 }
 
 
@@ -154,7 +159,7 @@ void manager(command_t* cmd ){
 //function to execute cd
 void run_cd( command_t* cmd, char* tokens ){
 	puts("cd function");
-	tokens = strtok(NULL, "/");
+	tokens = strtok(NULL, "");
 	
 	//go to home
 	if(tokens == NULL){
@@ -162,8 +167,8 @@ void run_cd( command_t* cmd, char* tokens ){
 	      
 	}
 	
-	//argument given, watch for bad input?
-	else{
+	//go to an absolute directory 
+	else if(!strncmp(tokens, "/", 1)){
 		char temp [MAX_COMMAND_LENGTH];
 		temp[0]='\0';
 		
@@ -173,6 +178,21 @@ void run_cd( command_t* cmd, char* tokens ){
 				tokens = strtok(NULL, "/");		
 		}
 		chdir(temp);	
+	}
+	
+	//go to a directory inside current working directory.
+	else{
+		
+		char temp [MAX_COMMAND_LENGTH];
+		strcpy(temp,cwd);
+		
+		while(tokens != NULL){
+				strcat(temp,"/");
+				strcat(temp, tokens);
+				tokens = strtok(NULL, "/");		
+		}
+		chdir(temp);
+			
 	}	
 	
 	
@@ -233,19 +253,30 @@ void run_echo( command_t* cmd, char* tokens){
 //function to execute pwd
 void run_pwd( command_t* cmd, char* tokens  ){
 	
-	char cwd[1024];
    if (getcwd(cwd, sizeof(cwd)) != NULL){
-   	//fprintf(stdout, "Current working dir: %s\n", cwd);
+   	fprintf(stdout, "Current working dir: %s\n", cwd);
    	}	
    else{
    		perror("getcwd() error");
    	}
-  fprintf(stdout, "Current working dir: %s\n", cwd);
 }
 
 //function to execute jobs
 void run_jobs( command_t* cmd, char* tokens  ){
 	puts("jobs function");
+}
+
+//function to execute and executable
+void run_exec( command_t* cmd, char* tokens ){
+	puts("exec function");
+	
+	//without arguments
+	
+	//with arguments
+	
+	//how to path
+
+	
 }
 
 /*******************************************************
