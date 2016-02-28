@@ -9,6 +9,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <stdbool.h>
 
 /**
@@ -57,10 +58,10 @@ bool get_command(command_t* cmd, FILE* in);
 void manager( command_t* cmd );
 
 // run commands functions
-void run_cd( command_t* cmd, char* tokens );
-void run_set( command_t* cmd, char* tokens );
-void run_echo( command_t* cmd, char* tokens );
-void run_pwd( command_t* cmd, char* tokens );
+void run_cd( char* tokens );
+void run_set( char* tokens );
+void run_echo( char* tokens );
+void run_pwd( char* tokens );
 void run_jobs( command_t* cmd, char* tokens );
 void run_exec( command_t* cmd, char* tokens );
 

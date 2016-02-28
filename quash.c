@@ -84,6 +84,7 @@ int main(int argc, char** argv) {
   
   //initialize variables.  
   strcpy(home, "/home");
+  strcpy(path, "/home/hkaustin/EECS_560/Lab1/");
   getcwd(cwd, sizeof(cwd)); 
   
   start();
@@ -108,28 +109,28 @@ char * pch;
 //function to parse/manage/execute commands
 void manager(command_t* cmd ){ 
 
-	
-	 char* tokens = strtok(cmd->cmdstr, " ");
-
+	 char* temp [MAX_COMMAND_LENGTH];
+	 strcpy(temp, cmd->cmdstr);
+	 char* tokens = strtok(temp, " ");
 	 
 	 //cd if the first two chars are
 	 if (!strcmp(tokens, "cd")){
-	 	run_cd( cmd, tokens );
+	 	run_cd( tokens );
 	 }
 	 
 	 //set 
 	 else if (!strcmp(tokens, "set")){
-	 	run_set( cmd, tokens);
+	 	run_set( tokens);
 	 }			
 	 
 	 //echo
 	 else if (!strcmp(tokens, "echo")){
-	 	run_echo( cmd, tokens );
+	 	run_echo( tokens );
 	 }
 	 
 	 //pwd
 	 else if (!strcmp(tokens, "pwd")){ 	
-	 	run_pwd( cmd, tokens );
+	 	run_pwd( tokens );
 	 }
 	 
 	 //jobs
@@ -157,7 +158,7 @@ void manager(command_t* cmd ){
 *******************************************************/
 
 //function to execute cd
-void run_cd( command_t* cmd, char* tokens ){
+void run_cd( char* tokens ){
 	puts("cd function");
 	tokens = strtok(NULL, "");
 	
@@ -200,7 +201,7 @@ void run_cd( command_t* cmd, char* tokens ){
 
 //function to execute set
 
-void run_set( command_t* cmd, char* tokens ){
+void run_set( char* tokens ){
 	puts("set function");	
 	tokens = strtok(NULL, "=");
 	
@@ -227,7 +228,7 @@ void run_set( command_t* cmd, char* tokens ){
 }
 
 //function to execute echo
-void run_echo( command_t* cmd, char* tokens){
+void run_echo( char* tokens){
 	puts("echo function");
 
 	tokens = strtok(NULL, "");
@@ -251,7 +252,7 @@ void run_echo( command_t* cmd, char* tokens){
 }
 
 //function to execute pwd
-void run_pwd( command_t* cmd, char* tokens  ){
+void run_pwd( char* tokens  ){
 	
    if (getcwd(cwd, sizeof(cwd)) != NULL){
    	fprintf(stdout, "Current working dir: %s\n", cwd);
@@ -269,12 +270,33 @@ void run_jobs( command_t* cmd, char* tokens  ){
 //function to execute and executable
 void run_exec( command_t* cmd, char* tokens ){
 	puts("exec function");
+	puts(cmd->cmdstr);
 	
+	//inside cwd
+	if( !strncmp(cmd->cmdstr, "./", 2) ){
+		puts("DONT USE PATH!");
+		char temp [MAX_COMMAND_LENGTH];
+		strcpy(temp,cwd);
+		tokens = strtok(cmd->cmdstr, ".");
+		strcat(temp,tokens);
+		execv(temp, NULL);
+	}
+	
+	//outside cwd
+	else{
+		puts("USE PATH!");
+		char temp [MAX_COMMAND_LENGTH];
+		strcpy(temp, path);
+		tokens = strtok(temp, ":");
+		strcat(tokens, cmd->cmdstr);
+		puts(tokens);
+		execv(tokens, NULL);
+					
+	}
+
 	//without arguments
-	
 	//with arguments
 	
-	//how to path
 
 	
 }
