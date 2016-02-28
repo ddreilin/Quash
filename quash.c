@@ -27,6 +27,9 @@
 static bool running;
 char home[MAX_COMMAND_LENGTH];
 char path[MAX_COMMAND_LENGTH];
+char* token;
+char *getcwd(char *buf, size_t size);
+
 
 /**************************************************************************
  * Private Functions 
@@ -77,8 +80,10 @@ bool get_command(command_t* cmd, FILE* in) {
  */
 int main(int argc, char** argv) { 
   command_t cmd; //< Command holder argument
+  strcpy(home, "/home");  
   
   start();
+  
   
   puts("Welcome to Quash!");
   puts("Type \"exit\" or \"quit\" to quit");
@@ -95,9 +100,10 @@ int main(int argc, char** argv) {
 
   return EXIT_SUCCESS;
 }
-
+char * pch;
 //function to parse/manage/execute commands
 void manager(command_t* cmd ){ 
+
 	
 	 char* tokens = strtok(cmd->cmdstr, " ");
 
@@ -152,18 +158,28 @@ void run_cd( command_t* cmd, char* tokens ){
 	
 	//go to home
 	if(tokens == NULL){
-		//go to home	
+		chdir(home);
+	      
 	}
 	
 	//argument given, watch for bad input?
 	else{
-		puts(tokens);	
+		char temp [MAX_COMMAND_LENGTH];
+		temp[0]='\0';
+		
+		while(tokens != NULL){
+				strcat(temp,"/");
+				strcat(temp, tokens);
+				tokens = strtok(NULL, "/");		
+		}
+		chdir(temp);	
 	}	
 	
 	
 }
 
 //function to execute set
+
 void run_set( command_t* cmd, char* tokens ){
 	puts("set function");	
 	tokens = strtok(NULL, "=");
@@ -187,14 +203,15 @@ void run_set( command_t* cmd, char* tokens ){
 	else{
 		puts("Incorrect set syntax");	
 	}
-		
+
 }
 
 //function to execute echo
 void run_echo( command_t* cmd, char* tokens){
 	puts("echo function");
+
 	tokens = strtok(NULL, "");
-	
+
 	//PATH variable
 	if (!strcmp(tokens, "$PATH")){
 		puts(path);	
@@ -215,7 +232,15 @@ void run_echo( command_t* cmd, char* tokens){
 
 //function to execute pwd
 void run_pwd( command_t* cmd, char* tokens  ){
-	puts("pwd function");
+	
+	char cwd[1024];
+   if (getcwd(cwd, sizeof(cwd)) != NULL){
+   	//fprintf(stdout, "Current working dir: %s\n", cwd);
+   	}	
+   else{
+   		perror("getcwd() error");
+   	}
+  fprintf(stdout, "Current working dir: %s\n", cwd);
 }
 
 //function to execute jobs
