@@ -10,7 +10,7 @@
  * Included Files
  **************************************************************************/ 
 #include "quash.h" // Putting this above the other includes allows us to ensure
-                   // this file's headder's #include statements are self
+                   // this file's header's #include statements are self
                    // contained.
 
 #include <string.h>
@@ -25,6 +25,8 @@
 // compilation unit (this file and all files that include it). This is similar
 // to private in other languages.
 static bool running;
+char home[MAX_COMMAND_LENGTH];
+char path[MAX_COMMAND_LENGTH];
 
 /**************************************************************************
  * Private Functions 
@@ -138,22 +140,58 @@ void run_cd( command_t* cmd ){
 
 //function to execute set
 void run_set( command_t* cmd ){
-	puts("set funciton");	
+	puts("set function");
+	
+	//PATH variable
+	if (!strncmp(cmd->cmdstr, "set PATH=", 9)){
+		puts("Setting PATH variable");	
+		strcpy(path, cmd->cmdstr);//need to cut off first 9
+	}
+	
+	//HOME Variable
+	else if (!strncmp(cmd->cmdstr, "set HOME=", 9)){
+		puts("Setting HOME variable");
+		strcpy(home, cmd->cmdstr); //need to cut off first 9
+			
+	}
+	
+	//default
+	else{
+		puts("Unknown variable");	
+	}
+		
 }
 
 //function to execute echo
 void run_echo( command_t* cmd ){
-	puts("echo funciton");
+	puts("echo function");
+	
+	//PATH variable
+	if (!strncmp(cmd->cmdstr, "echo $PATH", 10)){
+		puts(path);	
+	}
+	
+	//HOME Variable
+	else if (!strncmp(cmd->cmdstr, "echo $HOME", 10)){
+		puts(home);
+			
+	}
+	
+	//default
+	else{
+		puts("Unknown variable");	
+	}
+	
 }
 
 //function to execute pwd
 void run_pwd( command_t* cmd ){
-	puts("pwd funciton");
+	puts("pwd function");
 }
 
 //function to execute jobs
 void run_jobs( command_t* cmd ){
-	puts("jobs funciton");
+	puts("jobs function");
 }
 
 
