@@ -278,7 +278,7 @@ void run_exec( command_t* cmd, char* tokens ){
 	puts("exec function");
 	puts(cmd->cmdstr);
 	
-	pid_1 = fork(); 
+	
 	 
 	//inside cwd
 	if( !strncmp(cmd->cmdstr, "./", 2) ){
@@ -287,14 +287,17 @@ void run_exec( command_t* cmd, char* tokens ){
 		strcpy(temp,cwd);
 		tokens = strtok(cmd->cmdstr, ".");
 		strcat(temp,tokens);
-		
+		pid_1 = fork(); 
 		if (pid_1 == 0) {
 			/* First Child */ 
 			if ( (execv(temp, NULL) < 0)) {
  	        fprintf(stderr, "\nError execing DONT USE PATH. ERROR#%d\n", errno);
+ 	        exit(0);
            return EXIT_FAILURE;
+			  exit(0);
          }
     	}
+    	
 	}
 	//outside cwd
 	else{
@@ -303,21 +306,27 @@ void run_exec( command_t* cmd, char* tokens ){
 		strcpy(temp, path);
 		tokens = strtok(temp, ":");
 		strcat(tokens, cmd->cmdstr);
+      pid_1 = fork(); 
 		if (pid_1 == 0) {
 			/* First Child */ 
 			if ( (execv(temp, NULL) < 0)) {
- 	        fprintf(stderr, "\nError execing DONT USE PATH. ERROR#%d\n", errno);
+ 	        fprintf(stderr, "\nError execing USE PATH. ERROR#%d\n", errno);
+			  exit(0);           
            return EXIT_FAILURE;
+           
          }
     	}
-		puts(tokens);					
+    				
 	}
 
 	//without arguments
 	//with arguments
 	
 
-	
+	 if ((waitpid(pid_1, &status, 0)) == -1) {
+    fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
+    return EXIT_FAILURE;
+  }
 }
 
 /*******************************************************
