@@ -14,6 +14,7 @@
                    // contained.
 
 #include <string.h>
+#include <errno.h>
 
 /**************************************************************************
  * Private Variables
@@ -25,11 +26,16 @@
 // compilation unit (this file and all files that include it). This is similar
 // to private in other languages.
 static bool running;
-char home[MAX_COMMAND_LENGTH];
-char path[MAX_COMMAND_LENGTH];
-char cwd[MAX_COMMAND_LENGTH];
-char* token;
+
+char home[MAX_COMMAND_LENGTH]; //$HOME variable
+char path[MAX_COMMAND_LENGTH]; //#PATH variable
+char cwd[MAX_COMMAND_LENGTH]; //current working directory
+
+char* token;  //pointer to token in a given string, tokens are substrings delimted by second arg of strtok()
 char *getcwd(char *buf, size_t size);
+
+int status; //process status
+int pid_1; //first child process
 
 
 /**************************************************************************
@@ -84,7 +90,7 @@ int main(int argc, char** argv) {
   
   //initialize variables.  
   strcpy(home, "/home");
-  strcpy(path, "/home/hkaustin/EECS_560/Lab1/");
+  strcpy(path, "/home/ddreiln/EECS_678/Lab_04/signals");
   getcwd(cwd, sizeof(cwd)); 
   
   start();
@@ -272,6 +278,8 @@ void run_exec( command_t* cmd, char* tokens ){
 	puts("exec function");
 	puts(cmd->cmdstr);
 	
+	pid_1 = fork(); 
+	 
 	//inside cwd
 	if( !strncmp(cmd->cmdstr, "./", 2) ){
 		puts("DONT USE PATH!");
@@ -279,9 +287,15 @@ void run_exec( command_t* cmd, char* tokens ){
 		strcpy(temp,cwd);
 		tokens = strtok(cmd->cmdstr, ".");
 		strcat(temp,tokens);
-		execv(temp, NULL);
+		
+		if (pid_1 == 0) {
+			/* First Child */ 
+			if ( (execv(temp, NULL) < 0)) {
+ 	        fprintf(stderr, "\nError execing DONT USE PATH. ERROR#%d\n", errno);
+           return EXIT_FAILURE;
+         }
+    	}
 	}
-	
 	//outside cwd
 	else{
 		puts("USE PATH!");
@@ -289,9 +303,14 @@ void run_exec( command_t* cmd, char* tokens ){
 		strcpy(temp, path);
 		tokens = strtok(temp, ":");
 		strcat(tokens, cmd->cmdstr);
-		puts(tokens);
-		execv(tokens, NULL);
-					
+		if (pid_1 == 0) {
+			/* First Child */ 
+			if ( (execv(temp, NULL) < 0)) {
+ 	        fprintf(stderr, "\nError execing DONT USE PATH. ERROR#%d\n", errno);
+           return EXIT_FAILURE;
+         }
+    	}
+		puts(tokens);					
 	}
 
 	//without arguments
