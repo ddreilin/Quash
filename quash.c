@@ -96,36 +96,34 @@ int main(int argc, char** argv) {
 
 //function to parse/manage/execute commands
 void manager(command_t* cmd ){ 
-
-	 //parse until white space, to get command
-
+	 
 	 //cd if the first two chars are "cd"
-	 if (!strcmp(cmd->cmdstr, "cd")){
-	 	run_cd( &cmd );
+	 if (!strncmp(cmd->cmdstr, "cd", 2)){
+	 	run_cd( cmd );
 	 }
 	 
 	 //set 
-	 else if (!strcmp(cmd->cmdstr, "set")){
-	 	run_set( &cmd );
+	 else if (!strncmp(cmd->cmdstr, "set", 3)){
+	 	run_set( cmd );
 	 }			
 	 
 	 //echo
-	 else if (!strcmp(cmd->cmdstr, "echo")){
-	 	run_echo( &cmd );
+	 else if (!strncmp(cmd->cmdstr, "echo", 4)){
+	 	run_echo( cmd );
 	 }
 	 
 	 //pwd
-	 else if (!strcmp(cmd->cmdstr, "pwd")){ 	
-	 	run_pwd( &cmd );
+	 else if (!strncmp(cmd->cmdstr, "pwd", 3)){ 	
+	 	run_pwd( cmd );
 	 }
 	 
 	 //jobs
-	 else if (!strcmp(cmd->cmdstr, "jobs")){
-	 	run_jobs( &cmd );
+	 else if (!strncmp(cmd->cmdstr, "jobs", 4)){
+	 	run_jobs( cmd );
 	 }
 	
 	 //exit command
-	 else if (!strcmp(cmd->cmdstr, "exit") || !strcmp(cmd->cmdstr, "quit") )
+	 else if (!strncmp(cmd->cmdstr, "exit", 4) || !strncmp(cmd->cmdstr, "quit", 4) )
       terminate(); // Exit Quash
       
     //run an executable 
@@ -157,3 +155,5 @@ void run_pwd( command_t* cmd ){
 void run_jobs( command_t* cmd ){
 	puts("jobs funciton");
 }
+
+

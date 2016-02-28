@@ -53,6 +53,7 @@ void terminate();
  */
 bool get_command(command_t* cmd, FILE* in);
 
+//Manages what to run
 void manager( command_t* cmd );
 
 // run commands functions
@@ -61,6 +62,9 @@ void run_set( command_t* cmd );
 void run_echo( command_t* cmd );
 void run_pwd( command_t* cmd );
 void run_jobs( command_t* cmd );
+
+//gets the first word of a command
+int first_space( command_t* cmd );
 
 
 
