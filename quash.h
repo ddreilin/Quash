@@ -65,9 +65,6 @@ void run_pwd( char* tokens );
 void run_jobs( command_t* cmd, char* tokens );
 void run_exec( command_t* cmd, char* tokens );
 
-//helper functions
-void setPath( command_t* cmd );
-void setHome( command_t* cmd );
 
 
 

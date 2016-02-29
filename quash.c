@@ -89,8 +89,8 @@ int main(int argc, char** argv) {
   command_t cmd; //< Command holder argument
   
   //initialize variables.  
-  strcpy(home, "/home");
-  strcpy(path, "/home/ddreiln/EECS_678/Lab_04/signals");
+  strcpy(home, "/home/");
+  strcpy(path, "/home/:/home/hkaustin/EECS_678/project1-quash/quash/Quash/");
   getcwd(cwd, sizeof(cwd)); 
   
   start();
@@ -261,7 +261,7 @@ void run_echo( char* tokens){
 void run_pwd( char* tokens  ){
 	
    if (getcwd(cwd, sizeof(cwd)) != NULL){
-   	fprintf(stdout, "Current working dir: %s\n", cwd);
+   	fprintf(stdout, "Current working dir: %s/\n", cwd);
    	}	
    else{
    		perror("getcwd() error");
@@ -276,10 +276,7 @@ void run_jobs( command_t* cmd, char* tokens  ){
 //function to execute and executable
 void run_exec( command_t* cmd, char* tokens ){
 	puts("exec function");
-	puts(cmd->cmdstr);
-	
-	
-	 
+
 	//inside cwd
 	if( !strncmp(cmd->cmdstr, "./", 2) ){
 		puts("DONT USE PATH!");
@@ -287,46 +284,67 @@ void run_exec( command_t* cmd, char* tokens ){
 		strcpy(temp,cwd);
 		tokens = strtok(cmd->cmdstr, ".");
 		strcat(temp,tokens);
+		
 		pid_1 = fork(); 
 		if (pid_1 == 0) {
 			/* First Child */ 
 			if ( (execv(temp, NULL) < 0)) {
- 	        fprintf(stderr, "\nError execing DONT USE PATH. ERROR#%d\n", errno);
+		     if(errno == 2){
+		     		fprintf(stderr, "\nError execing %s. NOT FOUND", tokens);
+		     }
+		     else{
+		     		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+ 	        		
+		     }
  	        exit(0);
            return EXIT_FAILURE;
-			  exit(0);
          }
     	}
     	
+   	if ((waitpid(pid_1, &status, 0)) == -1) { 		
+    		fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
+  		}
+    	
+    	
 	}
+	
 	//outside cwd
 	else{
+		bool ran = false; //boolean to determine if executable is found/run
 		puts("USE PATH!");
 		char temp [MAX_COMMAND_LENGTH];
+		char temp2 [MAX_COMMAND_LENGTH];
 		strcpy(temp, path);
 		tokens = strtok(temp, ":");
-		strcat(tokens, cmd->cmdstr);
-      pid_1 = fork(); 
-		if (pid_1 == 0) {
-			/* First Child */ 
-			if ( (execv(temp, NULL) < 0)) {
- 	        fprintf(stderr, "\nError execing USE PATH. ERROR#%d\n", errno);
-			  exit(0);           
-           return EXIT_FAILURE;
+		
+		//try to execute for all paths
+		while(tokens != NULL){
+			strcpy(temp2, tokens);
+			strcat(temp2, cmd->cmdstr);
+			puts(temp2);
+			
+			pid_1 = fork(); 
+			if (pid_1 == 0) {
+				// First Child 
+				if ( (execv(temp2, NULL) < 0)) {
+ 	        	fprintf(stderr, "\nError execing USE PATH. ERROR#%d\n", errno);
+			  	exit(0);           
+           	return EXIT_FAILURE;
            
-         }
-    	}
+         	}
+    		}
+    		
+    		if ((waitpid(pid_1, &status, 0)) == -1) {   		
+    		 	fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
+  			}	
+			tokens = strtok(NULL, ":");				
+		}
+		
     				
 	}
 
-	//without arguments
-	//with arguments
-	
 
-	 if ((waitpid(pid_1, &status, 0)) == -1) {
-    fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
-    return EXIT_FAILURE;
-  }
+		
 }
 
 /*******************************************************
