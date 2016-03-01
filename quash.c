@@ -281,14 +281,31 @@ void run_exec( command_t* cmd, char* tokens ){
 	if( !strncmp(cmd->cmdstr, "./", 2) ){
 		puts("DONT USE PATH!");
 		char temp [MAX_COMMAND_LENGTH];
+		char temp2 [MAX_COMMAND_LENGTH];
+		
+		//put the name of the executable into temp
 		strcpy(temp,cwd);
-		tokens = strtok(cmd->cmdstr, ".");
-		strcat(temp,tokens);
+		tokens = strtok(cmd->cmdstr, "/");
+		tokens = strtok(NULL, "/");
+	 	char* tokens2 = strtok(tokens, " ");
+	 	strcat(temp,"/");
+		strcat(temp,tokens2);
+		
+		//put arguments into temp2
+		bzero(temp2, MAX_COMMAND_LENGTH);
+		tokens2 = strtok(NULL, " ");		
+		while(tokens2 != NULL){
+				strcat(temp2, tokens2);
+				strcat(temp2," ");
+				tokens2 = strtok(NULL, " ");		
+		}
+		puts(temp2);
+		
 		
 		pid_1 = fork(); 
 		if (pid_1 == 0) {
 			/* First Child */ 
-			if ( (execv(temp, NULL) < 0)) {
+			if ( (execl(temp, temp, temp2, (char *)0)) < 0) {
 		     if(errno == 2){
 		     		fprintf(stderr, "\nError execing %s. NOT FOUND", tokens);
 		     }
@@ -314,19 +331,37 @@ void run_exec( command_t* cmd, char* tokens ){
 		puts("USE PATH!");
 		char temp [MAX_COMMAND_LENGTH];
 		char temp2 [MAX_COMMAND_LENGTH];
+		char tempArgs [MAX_COMMAND_LENGTH];
+		char tempCmd [MAX_COMMAND_LENGTH];
+		
+		
+		//put arguments into tempArgs
+		char* tokens2 = strtok(cmd->cmdstr, " ");
+		strcpy(tempCmd, tokens2);
+		bzero(tempArgs, MAX_COMMAND_LENGTH);
+		tokens2 = strtok(NULL, " ");		
+		while(tokens2 != NULL){
+				strcat(tempArgs, tokens2);
+				strcat(tempArgs," ");
+				tokens2 = strtok(NULL, " ");		
+		}
+		puts(tempArgs);
+		
+		
+		//temp has all the possible paths, tokens break it up
 		strcpy(temp, path);
 		tokens = strtok(temp, ":");
 		
 		//try to execute for all paths
 		while(tokens != NULL){
 			strcpy(temp2, tokens);
-			strcat(temp2, cmd->cmdstr);
+			strcat(temp2, tempCmd);
 			puts(temp2);
 			
 			pid_1 = fork(); 
 			if (pid_1 == 0) {
 				// First Child 
-				if ( (execv(temp2, NULL) < 0)) {
+				if ( (execl(temp2, temp2, tempArgs,( char *)0)) < 0) {
  	        	fprintf(stderr, "\nError execing USE PATH. ERROR#%d\n", errno);
 			  	exit(0);           
            	return EXIT_FAILURE;
@@ -336,8 +371,9 @@ void run_exec( command_t* cmd, char* tokens ){
     		
     		if ((waitpid(pid_1, &status, 0)) == -1) {   		
     		 	fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
-  			}	
-			tokens = strtok(NULL, ":");				
+  			}		
+			tokens = strtok(NULL, ":");
+						
 		}
 		
     				
@@ -354,3 +390,10 @@ void run_exec( command_t* cmd, char* tokens ){
 *
 *
 *******************************************************/
+
+
+
+
+
+
+

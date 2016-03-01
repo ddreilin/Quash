@@ -65,6 +65,8 @@ void run_pwd( char* tokens );
 void run_jobs( command_t* cmd, char* tokens );
 void run_exec( command_t* cmd, char* tokens );
 
+//exec helper functions
+
 
 
 
