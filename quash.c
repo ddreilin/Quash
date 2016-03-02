@@ -285,7 +285,7 @@ void run_exec( command_t* cmd, char* tokens ){
 	
 	//inside cwd
 	if( !strncmp(cmd->cmdstr, "./", 2) ){
-		puts("DONT USE PATH!");
+		//variables needed to execute a command
 		char temp [MAX_COMMAND_LENGTH];//command
 		char temp2 [MAX_COMMAND_LENGTH];//arguments
 		char temp3 [MAX_COMMAND_LENGTH];//special argument
@@ -308,10 +308,8 @@ void run_exec( command_t* cmd, char* tokens ){
 		//put arguments into temp2
 		tokens2 = strtok(NULL, " ");		
 		while( (tokens2 != NULL) && (!special) ){
-			
 				//checks for >
-				if (!strcmp(tokens2, ">")) {
-					
+				if (!strcmp(tokens2, ">")) {	
 					special = true;
 					tokens2 = strtok(NULL, " ");
 					if(tokens2 == NULL){
@@ -320,7 +318,6 @@ void run_exec( command_t* cmd, char* tokens ){
 					}
 					puts("> execution");
 					greaterThan = true;
-				
 				}
 				
 				//checks for < 
@@ -368,68 +365,118 @@ void run_exec( command_t* cmd, char* tokens ){
 				puts("invalid syntax");
 				return;
 		}
-		
-		
-		
-		pid_1 = fork(); 
-		if (pid_1 == 0) {
-			//> redirection
-			if(greaterThan){
-				strcat(tempCWD, "/");
-				strcat(tempCWD, temp3);
-				exec_greaterThan(temp, temp2, tempCWD, tokens);
-			}
-			//< redirection
-			else if(lessThan){
-				strcat(tempCWD, "/");
-				strcat(tempCWD, temp3);
-				exec_lessThan(temp, temp2, tempCWD, tokens);
-			}
-			//| pipe
-			else if(execPipe){
+		//make sure the executable exists
+		if(access(temp, F_OK) == 0){
+			pid_1 = fork(); 
+			if (pid_1 == 0) {
+				//> redirection
+				if(greaterThan){
+					strcat(tempCWD, "/");
+					strcat(tempCWD, temp3);
+					exec_greaterThan(temp, temp2, tempCWD, tokens);
+				}
+				//< redirection
+				else if(lessThan){
+					strcat(tempCWD, "/");
+					strcat(tempCWD, temp3);
+					exec_lessThan(temp, temp2, tempCWD, tokens);
+				}
+				//| pipe
+				else if(execPipe){
 			
-			}
-			//default execution
-			else{ 
-				exec_default(temp, temp2, tokens);
-      	}
+				}
+				//default execution
+				else{ 
+					exec_default(temp, temp2, tokens);
+      		}
+    		}
+    	
+   		if ((waitpid(pid_1, &status, 0)) == -1) { 		
+    			fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
+  			}
+    	
     	}
-    	
-   	if ((waitpid(pid_1, &status, 0)) == -1) { 		
-    		fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
-  		}
-    	
-    	
+    	else{
+			puts("Executable does not exist in current working directory");    	
+    	}
 	}
-	
-	
-	
-	
-	
-	
 	
 	
 	//outside cwd, use Path.
 	else{
 		bool ran = false; //boolean to determine if executable is found/run
-		puts("USE PATH!");
-		char temp [MAX_COMMAND_LENGTH];
-		char temp2 [MAX_COMMAND_LENGTH];
-		char tempArgs [MAX_COMMAND_LENGTH];
-		char tempCmd [MAX_COMMAND_LENGTH];
-		
+		char temp [MAX_COMMAND_LENGTH];//copy of PATH
+		char temp2 [MAX_COMMAND_LENGTH];//Current PATH attempting execution
+		char temp3 [MAX_COMMAND_LENGTH];//special argument
+		char tempArgs [MAX_COMMAND_LENGTH];//holds command arguments
+		char tempCMD [MAX_COMMAND_LENGTH];//name of actual command
+		char tempCWD [MAX_COMMAND_LENGTH];//copy of current working directory
+		bzero(temp, MAX_COMMAND_LENGTH);		
+		bzero(temp2, MAX_COMMAND_LENGTH);
+		bzero(tempArgs, MAX_COMMAND_LENGTH);
+		bzero(tempCMD, MAX_COMMAND_LENGTH);
+		bzero(tempCWD, MAX_COMMAND_LENGTH);
 		
 		//put arguments into tempArgs
 		char* tokens2 = strtok(cmd->cmdstr, " ");
-		strcpy(tempCmd, tokens2);
-		bzero(tempArgs, MAX_COMMAND_LENGTH);
-		tokens2 = strtok(NULL, " ");		
-		while(tokens2 != NULL){
-				strcat(tempArgs, tokens2);
-				strcat(tempArgs," ");
-				tokens2 = strtok(NULL, " ");		
+		strcpy(tempCMD, tokens2);
+		tokens2 = strtok(NULL, " ");				
+		while( (tokens2 != NULL) && (!special) ){
+				//checks for >
+				if (!strcmp(tokens2, ">")) {	
+					special = true;
+					tokens2 = strtok(NULL, " ");
+					if(tokens2 == NULL){
+						puts("Missing argument after >");
+						return;					
+					}
+					puts("> execution");
+					greaterThan = true;
+				}
+				
+				//checks for < 
+				else if(!strcmp(tokens2, "<")){
+					special = true;
+					tokens2 = strtok(NULL, " ");
+					if(tokens2 == NULL){
+						puts("Missing argument after <");
+						return;					
+					}
+					puts("< execution");
+					lessThan = true;
+				}
+				
+				//checks for |
+				else if(!strcmp(tokens2, "|")){
+					special = true;
+					tokens2 = strtok(NULL, " ");
+					if(tokens2 == NULL){
+						puts("Missing argument after |");
+						return;					
+					}
+					puts("| execution");
+					execPipe = true;
+				}
+				
+				//adds arguments
+				if(!special){
+					strcat(tempArgs, tokens2);
+					strcat(tempArgs," ");
+					tokens2 = strtok(NULL, " ");		
+				}
+				
+				//adds special character argument 
+				else{
+					strcat(temp3, tokens2);													
+				}	
+				
 		}
-		puts(tempArgs);
+		tokens2 = strtok(NULL, " ");
+		//If not null after a special character
+		if( tokens2 != NULL) {
+				puts("invalid syntax");
+				return;
+		}
 		
 		
 		//temp has all the possible paths, tokens break it up
@@ -437,44 +484,54 @@ void run_exec( command_t* cmd, char* tokens ){
 		tokens = strtok(temp, ":");
 		
 		//try to execute for all paths
-		while(tokens != NULL){
+		while( (tokens != NULL) && (!ran) ){
 			strcpy(temp2, tokens);
-			strcat(temp2, tempCmd);
-			puts(temp2);
+			strcpy(tempCWD, tokens);
+			strcat(temp2, tempCMD);
 			
-			pid_1 = fork(); 
-			if (pid_1 == 0) {
-				// First Child 
-				if ( (execl(temp2, temp2, tempArgs,( char *)0)) < 0) {
-					
-					//an error occurred
-					if(errno != 2){
-		     			printf(stderr, "\nError execing %s. ERROR#%d\n", tempCmd ,errno);
-		     		}
-		     		exit(0);           
-           		return EXIT_FAILURE;
-         	}
-         	else{
-					ran = true;         	
-         	} 	
-    		}
+			//see if the executable exists for the current path
+			if(access(temp2, F_OK) == 0){
+				ran = true;
+				
+				pid_1 = fork(); 
+				if (pid_1 == 0) {
+				
+					//> redirection
+					if(greaterThan){
+						strcat(tempCWD, temp3);
+						exec_greaterThan(temp2, tempArgs, tempCWD, tempCMD);
+					}
+					//< redirection
+					else if(lessThan){
+						strcat(tempCWD, "/");
+						strcat(tempCWD, temp3);
+						exec_lessThan(temp2, tempArgs, tempCWD, tempCMD);
+						ran = true;
+					}
+					//| pipe
+					else if(execPipe){
+			
+					}
+					//default execution
+					else{ 
+						exec_default(temp2, tempArgs, tempCMD);
+      			}
+				
+    			}
     		
-    		if ((waitpid(pid_1, &status, 0)) == -1) {   		
-    		 	fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
-  			}		
+    			if ((waitpid(pid_1, &status, 0)) == -1) {   		
+    		 		fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
+  				}		
+					
+			}
 			tokens = strtok(NULL, ":");
-						
 		}
-		
 		//If none of the paths contained the executable.
 		if(!ran){
-			puts("\nError execing, executable not found in PATH. ERROR#2");	
+			puts("Executable does not exist in PATH.");	
 		}
-		
     				
 	}
-
-
 		
 }
 
@@ -567,7 +624,6 @@ void exec_default(char* command, char* args, char* tokens){
    	return EXIT_FAILURE;
   	}
 }
-
 
 
 
