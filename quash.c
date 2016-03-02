@@ -275,16 +275,30 @@ void run_jobs( command_t* cmd, char* tokens  ){
 
 //function to execute and executable
 void run_exec( command_t* cmd, char* tokens ){
-	puts("exec function");
-
+	
+	//Exec booleans to handle special characters
+	bool special = false;
+	bool greaterThan = false;
+	bool lessThan = false;	
+	bool execPipe = false;
+	bool background = false;
+	
 	//inside cwd
 	if( !strncmp(cmd->cmdstr, "./", 2) ){
 		puts("DONT USE PATH!");
-		char temp [MAX_COMMAND_LENGTH];
-		char temp2 [MAX_COMMAND_LENGTH];
+		char temp [MAX_COMMAND_LENGTH];//command
+		char temp2 [MAX_COMMAND_LENGTH];//arguments
+		char temp3 [MAX_COMMAND_LENGTH];//special argument
+		char tempCWD[MAX_COMMAND_LENGTH];
+		bzero(temp, MAX_COMMAND_LENGTH);		
+		bzero(temp2, MAX_COMMAND_LENGTH);
+		bzero(temp3, MAX_COMMAND_LENGTH);
+		bzero(tempCWD, MAX_COMMAND_LENGTH);
+		
 		
 		//put the name of the executable into temp
-		strcpy(temp,cwd);
+		strcpy(tempCWD,cwd);
+		strcpy(temp,tempCWD);
 		tokens = strtok(cmd->cmdstr, "/");
 		tokens = strtok(NULL, "/");
 	 	char* tokens2 = strtok(tokens, " ");
@@ -292,30 +306,93 @@ void run_exec( command_t* cmd, char* tokens ){
 		strcat(temp,tokens2);
 		
 		//put arguments into temp2
-		bzero(temp2, MAX_COMMAND_LENGTH);
 		tokens2 = strtok(NULL, " ");		
-		while(tokens2 != NULL){
-				strcat(temp2, tokens2);
-				strcat(temp2," ");
-				tokens2 = strtok(NULL, " ");		
+		while( (tokens2 != NULL) && (!special) ){
+			
+				//checks for >
+				if (!strcmp(tokens2, ">")) {
+					
+					special = true;
+					tokens2 = strtok(NULL, " ");
+					if(tokens2 == NULL){
+						puts("Missing argument after >");
+						return;					
+					}
+					puts("> execution");
+					greaterThan = true;
+				
+				}
+				
+				//checks for < 
+				else if(!strcmp(tokens2, "<")){
+					special = true;
+					tokens2 = strtok(NULL, " ");
+					if(tokens2 == NULL){
+						puts("Missing argument after <");
+						return;					
+					}
+					puts("< execution");
+					lessThan = true;
+				
+				}
+				
+				//checks for |
+				else if(!strcmp(tokens2, "|")){
+					special = true;
+					tokens2 = strtok(NULL, " ");
+					if(tokens2 == NULL){
+						puts("Missing argument after |");
+						return;					
+					}
+					puts("| execution");
+					execPipe = true;
+				}
+				
+				//adds arguments
+				if(!special){
+					strcat(temp2, tokens2);
+					strcat(temp2," ");
+					tokens2 = strtok(NULL, " ");
+					
+				}
+				
+				//adds special character argument 
+				else{
+					strcat(temp3, tokens2);													
+				}	
+				
 		}
-		puts(temp2);
+		tokens2 = strtok(NULL, " ");
+		//If not null after a special character
+		if( tokens2 != NULL) {
+				puts("invalid syntax");
+				return;
+		}
+		
 		
 		
 		pid_1 = fork(); 
 		if (pid_1 == 0) {
-			/* First Child */ 
-			if ( (execl(temp, temp, temp2, (char *)0)) < 0) {
-		     if(errno == 2){
-		     		fprintf(stderr, "\nError execing %s. NOT FOUND", tokens);
-		     }
-		     else{
-		     		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
- 	        		
-		     }
- 	        exit(0);
-           return EXIT_FAILURE;
-         }
+			//> redirection
+			if(greaterThan){
+				strcat(tempCWD, "/");
+				strcat(tempCWD, temp3);
+				exec_greaterThan(temp, temp2, tempCWD, tokens);
+			}
+			//< redirection
+			else if(lessThan){
+				strcat(tempCWD, "/");
+				strcat(tempCWD, temp3);
+				exec_lessThan(temp, temp2, tempCWD, tokens);
+			}
+			//| pipe
+			else if(execPipe){
+			
+			}
+			//default execution
+			else{ 
+				exec_default(temp, temp2, tokens);
+      	}
     	}
     	
    	if ((waitpid(pid_1, &status, 0)) == -1) { 		
@@ -325,7 +402,14 @@ void run_exec( command_t* cmd, char* tokens ){
     	
 	}
 	
-	//outside cwd
+	
+	
+	
+	
+	
+	
+	
+	//outside cwd, use Path.
 	else{
 		bool ran = false; //boolean to determine if executable is found/run
 		puts("USE PATH!");
@@ -362,11 +446,17 @@ void run_exec( command_t* cmd, char* tokens ){
 			if (pid_1 == 0) {
 				// First Child 
 				if ( (execl(temp2, temp2, tempArgs,( char *)0)) < 0) {
- 	        	fprintf(stderr, "\nError execing USE PATH. ERROR#%d\n", errno);
-			  	exit(0);           
-           	return EXIT_FAILURE;
-           
+					
+					//an error occurred
+					if(errno != 2){
+		     			printf(stderr, "\nError execing %s. ERROR#%d\n", tempCmd ,errno);
+		     		}
+		     		exit(0);           
+           		return EXIT_FAILURE;
          	}
+         	else{
+					ran = true;         	
+         	} 	
     		}
     		
     		if ((waitpid(pid_1, &status, 0)) == -1) {   		
@@ -374,6 +464,11 @@ void run_exec( command_t* cmd, char* tokens ){
   			}		
 			tokens = strtok(NULL, ":");
 						
+		}
+		
+		//If none of the paths contained the executable.
+		if(!ran){
+			puts("\nError execing, executable not found in PATH. ERROR#2");	
 		}
 		
     				
@@ -390,8 +485,88 @@ void run_exec( command_t* cmd, char* tokens ){
 *
 *
 *******************************************************/
+void exec_greaterThan(char* command, char* args, char* output, char* tokens){
 
+	FILE *fp;
+	//change program to write in text file instead.
+	fp = fopen(output, "w");
+	
+	dup2(fileno(fp), STDOUT_FILENO);
+	
+	
+	//actually try to execute
+	if ( (execl(command, command, args, (char *)0)) < 0) {
+		if(errno == 2){
+			fprintf(stderr, "\nError execing %s. NOT FOUND", tokens);
+		}
+		else{
+		 	fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);  		
+		}
+		fclose(fp);
+ 	  	exit(0);
+   	return EXIT_FAILURE;
+  	}
+  	fclose(fp);
 
+}
+
+void exec_lessThan(char* command, char* args, char* output, char* tokens){
+
+	FILE *fp;
+	//change program to write in text file instead.
+	fp = fopen(output, "r");
+	
+	dup2(fileno(fp), STDIN_FILENO);
+	
+	//actually try to execute
+	if ( (execl(command, command, args, (char *)0)) < 0) {
+		if(errno == 2){
+			fprintf(stderr, "\nError execing %s. NOT FOUND", tokens);
+		}
+		else{
+		 	fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);  		
+		}
+		fclose(fp);
+ 	  	exit(0);
+   	return EXIT_FAILURE;
+  	}
+ 	fclose(fp);
+}
+
+void exec_pipe(char* command, char* args, char* output, char* tokens){
+
+	FILE *fp;
+	//change program to write in text file instead.
+	fp = fopen(output, "r");
+	
+	
+	//actually try to execute
+	if ( (execl(command, command, args, (char *)0)) < 0) {
+		if(errno == 2){
+			fprintf(stderr, "\nError execing %s. NOT FOUND", tokens);
+		}
+		else{
+		 	fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);  		
+		}
+ 	  	exit(0);
+   	return EXIT_FAILURE;
+  	}
+
+}
+
+void exec_default(char* command, char* args, char* tokens){
+	
+	if ( (execl(command, command, args, (char *)0)) < 0) {
+		if(errno == 2){
+			fprintf(stderr, "\nError execing %s. NOT FOUND", tokens);
+		}
+		else{
+		 	fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);  		
+		}
+ 	  	exit(0);
+   	return EXIT_FAILURE;
+  	}
+}
 
 
 

@@ -119,6 +119,14 @@ void run_exec( command_t* cmd, char* tokens );
 
 //exec helper functions
 
+void exec_greaterThan(char* command, char* args, char* output, char* tokens);
+
+void exec_lessThan(char* command, char* args, char* output, char* tokens);
+
+void exec_pipe(char* command, char* args, char* output, char* tokens);
+
+void exec_default(char* command, char* args, char* tokens);
+
 
 
 
