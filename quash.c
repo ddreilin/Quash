@@ -412,6 +412,9 @@ void run_exec( command_t* cmd, char* tokens ){
   				if (pid_2 == 0) {
   					close(pfd1[1]);
   					dup2(pfd1[0], STDIN_FILENO);
+  					strcpy(temp, cwd);
+  					strcat(temp, "/");
+  					strcat(temp, temp3);
   					exec_default(temp, temp2, tokens);
   				}
     	
@@ -565,6 +568,11 @@ void run_exec( command_t* cmd, char* tokens ){
   					if (pid_2 == 0) {
   						close(pfd1[1]);
   						dup2(pfd1[0], STDIN_FILENO);
+  						
+  						strcpy(temp2, tokens);
+  						strcat(temp2, temp3);
+  						puts(temp2);
+  						//temp ARGS needs to be the output of first fork.
   						exec_default(temp2, tempArgs, tempCMD);
   					}
     	
@@ -603,14 +611,8 @@ void exec_greaterThan(char* command, char* args, char* output, char* tokens){
 	
 	//actually try to execute
 	if ( (execl(command, command, args, (char *)0)) < 0) {
-		if(errno == 2){
-			fprintf(stderr, "\nError execing %s. NOT FOUND", tokens);
-		}
-		else{
-		 	fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);  		
-		}
+		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
 		fclose(fp);
- 	  	exit(0);
    	return EXIT_FAILURE;
   	}
   	fclose(fp);
@@ -627,31 +629,26 @@ void exec_lessThan(char* command, char* args, char* output, char* tokens){
 	
 	//actually try to execute
 	if ( (execl(command, command, args, (char *)0)) < 0) {
-		if(errno == 2){
-			fprintf(stderr, "\nError execing %s. NOT FOUND", tokens);
-		}
-		else{
-		 	fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);  		
-		}
+		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);  		
 		fclose(fp);
- 	  	exit(0);
    	return EXIT_FAILURE;
   	}
  	fclose(fp);
  	exit(0);
 }
 
+void exec_pipe(char* command, char* args, char* output, char* tokens){
+	if ( (execl(command, command, "-c", (char *)0)) < 0) {
+		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);  		
+   	return EXIT_FAILURE;
+  	}
+  	exit(0);
+}
 
 void exec_default(char* command, char* args, char* tokens){
 	
 	if ( (execl(command, command, args, (char *)0)) < 0) {
-		if(errno == 2){
-			fprintf(stderr, "\nError execing %s. NOT FOUND", tokens);
-		}
-		else{
-		 	fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);  		
-		}
- 	  	exit(0);
+		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);  		
    	return EXIT_FAILURE;
   	}
   	exit(0);
