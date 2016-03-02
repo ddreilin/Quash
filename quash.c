@@ -35,7 +35,7 @@ char* token;  //pointer to token in a given string, tokens are substrings delimt
 char *getcwd(char *buf, size_t size);
 
 int status; //process status
-int pid_1; //first child process
+int pid_1, pid_2; //child processes
 
 
 /**************************************************************************
@@ -282,6 +282,7 @@ void run_exec( command_t* cmd, char* tokens ){
 	bool lessThan = false;	
 	bool execPipe = false;
 	bool background = false;
+	bool moreArgs = false;
 	
 	//inside cwd
 	if( !strncmp(cmd->cmdstr, "./", 2) ){
@@ -347,10 +348,12 @@ void run_exec( command_t* cmd, char* tokens ){
 				
 				//adds arguments
 				if(!special){
-					strcat(temp2, tokens2);
-					strcat(temp2," ");
+					if(moreArgs){
+						strcat(temp2," ");
+					}
+					strcat(temp2, tokens2);					
 					tokens2 = strtok(NULL, " ");
-					
+					moreArgs = true;
 				}
 				
 				//adds special character argument 
@@ -367,35 +370,56 @@ void run_exec( command_t* cmd, char* tokens ){
 		}
 		//make sure the executable exists
 		if(access(temp, F_OK) == 0){
-			pid_1 = fork(); 
-			if (pid_1 == 0) {
-				//> redirection
-				if(greaterThan){
-					strcat(tempCWD, "/");
-					strcat(tempCWD, temp3);
-					exec_greaterThan(temp, temp2, tempCWD, tokens);
-				}
-				//< redirection
-				else if(lessThan){
-					strcat(tempCWD, "/");
-					strcat(tempCWD, temp3);
-					exec_lessThan(temp, temp2, tempCWD, tokens);
-				}
-				//| pipe
-				else if(execPipe){
 			
-				}
-				//default execution
-				else{ 
-					exec_default(temp, temp2, tokens);
-      		}
-    		}
+			if(!execPipe){
+				pid_1 = fork(); 
+				if (pid_1 == 0) {
+					//> redirection
+					if(greaterThan){
+						strcat(tempCWD, "/");
+						strcat(tempCWD, temp3);
+						exec_greaterThan(temp, temp2, tempCWD, tokens);
+					}
+					//< redirection
+					else if(lessThan){
+						strcat(tempCWD, "/");
+						strcat(tempCWD, temp3);
+						exec_lessThan(temp, temp2, tempCWD, tokens);
+					}
+					//default execution
+					else{ 
+						exec_default(temp, temp2, tokens);
+      			}
+    			}
     	
-   		if ((waitpid(pid_1, &status, 0)) == -1) { 		
+   			if ((waitpid(pid_1, &status, 0)) == -1) { 		
     			fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
+  				}
   			}
+  			//For piping	
+  			else{
+  				int pfd1[2];
+  				pipe(pfd1);
+  				
+  				pid_1 = fork();
+  				if (pid_1 == 0) {
+  					close(pfd1[0]);
+  					dup2(pfd1[1], STDOUT_FILENO);
+  					exec_default(temp, temp2, tokens);		
+  				}
+  				
+  				pid_2 = fork();
+  				if (pid_2 == 0) {
+  					close(pfd1[1]);
+  					dup2(pfd1[0], STDIN_FILENO);
+  					exec_default(temp, temp2, tokens);
+  				}
     	
-    	}
+    			if ((waitpid(pid_1, &status, 0)) == -1) { 		
+    			fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
+  				}
+    		}
+    	}	
     	else{
 			puts("Executable does not exist in current working directory");    	
     	}
@@ -460,9 +484,12 @@ void run_exec( command_t* cmd, char* tokens ){
 				
 				//adds arguments
 				if(!special){
-					strcat(tempArgs, tokens2);
-					strcat(tempArgs," ");
-					tokens2 = strtok(NULL, " ");		
+					if(moreArgs){
+						strcat(tempArgs," ");
+					}
+					strcat(tempArgs, tokens2);					
+					tokens2 = strtok(NULL, " ");
+					moreArgs = true;		
 				}
 				
 				//adds special character argument 
@@ -493,35 +520,58 @@ void run_exec( command_t* cmd, char* tokens ){
 			if(access(temp2, F_OK) == 0){
 				ran = true;
 				
-				pid_1 = fork(); 
-				if (pid_1 == 0) {
+				//not piping
+				if(!execPipe){
 				
-					//> redirection
-					if(greaterThan){
-						strcat(tempCWD, temp3);
-						exec_greaterThan(temp2, tempArgs, tempCWD, tempCMD);
-					}
-					//< redirection
-					else if(lessThan){
-						strcat(tempCWD, "/");
-						strcat(tempCWD, temp3);
-						exec_lessThan(temp2, tempArgs, tempCWD, tempCMD);
-						ran = true;
-					}
-					//| pipe
-					else if(execPipe){
-			
-					}
-					//default execution
-					else{ 
-						exec_default(temp2, tempArgs, tempCMD);
-      			}
+					pid_1 = fork(); 
+					if (pid_1 == 0) {
 				
-    			}
+						//> redirection
+						if(greaterThan){
+							strcat(tempCWD, temp3);
+							exec_greaterThan(temp2, tempArgs, tempCWD, tempCMD);
+						}
+						//< redirection
+						else if(lessThan){
+							strcat(tempCWD, "/");
+							strcat(tempCWD, temp3);
+							exec_lessThan(temp2, tempArgs, tempCWD, tempCMD);
+							ran = true;
+						}
+						//default execution
+						else{ 
+							exec_default(temp2, tempArgs, tempCMD);
+      				}
+				
+    				}
     		
-    			if ((waitpid(pid_1, &status, 0)) == -1) {   		
-    		 		fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
-  				}		
+    				if ((waitpid(pid_1, &status, 0)) == -1) {   		
+    		 			fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
+  					}
+  				}
+  				//piping
+				else{
+					int pfd1[2];
+  					pipe(pfd1);
+  				
+  					pid_1 = fork();
+  					if (pid_1 == 0) {
+  						close(pfd1[0]);
+  						dup2(pfd1[1], STDOUT_FILENO);
+  						exec_default(temp2, tempArgs, tempCMD);		
+  					}
+  				
+  					pid_2 = fork();
+  					if (pid_2 == 0) {
+  						close(pfd1[1]);
+  						dup2(pfd1[0], STDIN_FILENO);
+  						exec_default(temp2, tempArgs, tempCMD);
+  					}
+    	
+    				if ((waitpid(pid_1, &status, 0)) == -1) { 		
+    					fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
+  					}
+				}  								
 					
 			}
 			tokens = strtok(NULL, ":");
@@ -564,7 +614,7 @@ void exec_greaterThan(char* command, char* args, char* output, char* tokens){
    	return EXIT_FAILURE;
   	}
   	fclose(fp);
-
+  	exit(0);
 }
 
 void exec_lessThan(char* command, char* args, char* output, char* tokens){
@@ -588,28 +638,9 @@ void exec_lessThan(char* command, char* args, char* output, char* tokens){
    	return EXIT_FAILURE;
   	}
  	fclose(fp);
+ 	exit(0);
 }
 
-void exec_pipe(char* command, char* args, char* output, char* tokens){
-
-	FILE *fp;
-	//change program to write in text file instead.
-	fp = fopen(output, "r");
-	
-	
-	//actually try to execute
-	if ( (execl(command, command, args, (char *)0)) < 0) {
-		if(errno == 2){
-			fprintf(stderr, "\nError execing %s. NOT FOUND", tokens);
-		}
-		else{
-		 	fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);  		
-		}
- 	  	exit(0);
-   	return EXIT_FAILURE;
-  	}
-
-}
 
 void exec_default(char* command, char* args, char* tokens){
 	
@@ -623,6 +654,7 @@ void exec_default(char* command, char* args, char* tokens){
  	  	exit(0);
    	return EXIT_FAILURE;
   	}
+  	exit(0);
 }
 
 
