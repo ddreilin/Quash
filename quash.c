@@ -129,9 +129,9 @@ int main(int argc, char** argv){
   command_t cmd;
 
   //initialize variables.
-  strcpy(home, "/home/");
-  strcpy(path, "/home/:/home/ddreilin/EECS_678/Project1/Quash/");
-  strcat(path, ":/home/hkaustin/EECS_678/project1-quash/quash/Quash/");
+  strcpy(home, "/home");
+  strcpy(path, "/home:/home/ddreilin/EECS_678/Project1/Quash");
+  strcat(path, ":/home/hkaustin/EECS_678/project1-quash/quash/Quash");
 
   getcwd(cwd, sizeof(cwd));
   start();
@@ -148,9 +148,6 @@ int main(int argc, char** argv){
   }
   return EXIT_SUCCESS;
 }
-
-//what is pch?
-char * pch;
 
 //**************************************************************************
 // function to parse/manage/execute commands
@@ -283,7 +280,7 @@ void run_echo( char* tokens){
 //**************************************************************************
 void run_pwd(){
    if (getcwd(cwd, sizeof(cwd)) != NULL){
-   	fprintf(stdout, "Current working dir: %s/\n", cwd);
+   	fprintf(stdout, "Current working dir: %s\n", cwd);
    	}
    else{
    		perror("getcwd() error");
@@ -595,6 +592,7 @@ void run_exec( command_t* cmd, char* tokens ){
 		while( (tokens != NULL) && (!ran) ){
 			strcpy(temp2, tokens);
 			strcpy(tempCWD, tokens);
+      strcat(temp2, "/");
 			strcat(temp2, tempCMD);
 
 			//see if the executable exists for the current path
@@ -609,6 +607,7 @@ void run_exec( command_t* cmd, char* tokens ){
 
 						//> redirection
 						if(greaterThan){
+              strcat(tempCWD, "/");
 							strcat(tempCWD, temp3);
 							exec_greaterThan(temp2, tempArgs, tempCWD, tempCMD, background);
 						}
@@ -649,6 +648,7 @@ void run_exec( command_t* cmd, char* tokens ){
   					 dup2(pfd1[0], STDIN_FILENO);
 
   					 strcpy(temp2, tokens);
+             strcat(temp2, "/");
   					 strcat(temp2, temp3);
   					 //temp ARGS needs to be the output of first fork.
              read(pfd1[0], tempArgs, MAX_COMMAND_LENGTH);
