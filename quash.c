@@ -36,6 +36,9 @@
 // to private in other languages.
 static bool running;
 
+static jobs = 0;
+static int jobpids [10];
+
 //**************************************************************************
 // char array to hold value of $HOME
 // **************************************************************************
@@ -370,7 +373,7 @@ void run_exec( command_t* cmd, char* tokens ){
 					if(moreArgs){
 						strcat(temp2," ");
 					}
-          //if it is a backgroun operation
+          //if it is a background operation
           if (!strcmp(tokens2, "&")) {
             background = true;
             special = true;
@@ -416,33 +419,39 @@ void run_exec( command_t* cmd, char* tokens ){
 		}
 		//make sure the executable exists
 		if(access(temp, F_OK) == 0){
-			if(!execPipe){
-				pid_1 = fork();
-				if (pid_1 == 0) {
-					//> redirection
-					if(greaterThan){
-						strcat(tempCWD, "/");
-						strcat(tempCWD, temp3);
-						exec_greaterThan(temp, temp2, tempCWD, tokens, background);
-					}
-					//< redirection
-					else if(lessThan){
-						strcat(tempCWD, "/");
-						strcat(tempCWD, temp3);
-						exec_lessThan(temp, temp2, tempCWD, tokens, background);
-					}
-					//default execution
-					else{
-            puts(temp);
-            puts(temp2);
-            puts(tokens);
-						exec_default(temp, temp2, tokens, background);
+  			if(!execPipe){
+  				pid_1 = fork();
+  				if (pid_1 == 0) {
+  					//> redirection
+  					if(greaterThan){
+  						strcat(tempCWD, "/");
+  						strcat(tempCWD, temp3);
+  						exec_greaterThan(temp, temp2, tempCWD, tokens, background);
+  					}
+  					//< redirection
+  					else if(lessThan){
+  						strcat(tempCWD, "/");
+  						strcat(tempCWD, temp3);
+  						exec_lessThan(temp, temp2, tempCWD, tokens, background);
+  					}
+  					//default execution
+  					else{
+  						exec_default(temp, temp2, tokens, background);
+        			}
       			}
-    			}
-   			if ((waitpid(pid_1, &status, 0)) == -1) {
-    			fprintf(stderr, "Process 1 encountered an error ICWD. ERROR%d", errno);
-  				}
-  			}
+          //only wait if it isn't a background process
+          if(!background){
+            if ((waitpid(pid_1, &status, 0)) == -1) {
+        			fprintf(stderr, "Process 1 encountered an error ICWD. ERROR%d", errno);
+      				}
+      			}
+          else{
+            jobpids[jobs] = pid_1;
+            jobs++;
+            printf("[%d] %d\n", jobs, pid_1);
+          }
+        }
+
   			//For piping
   			else{
   			  int pfd1[2];
@@ -468,14 +477,23 @@ void run_exec( command_t* cmd, char* tokens ){
             exit(0);
   				}
 
-    			if ((waitpid(pid_1, &status, 0)) == -1) {
-    			fprintf(stderr, "Process 1 encountered an error in pipe ICWD. ERROR%d", errno);
-  				}
-    		}
-    	}
-    	else{
-			puts("Executable does not exist in current working directory");
-    	}
+          //only wait if it isn't a background process
+          if(!background){
+    		      if ((waitpid(pid_1, &status, 0)) == -1) {
+  			          fprintf(stderr, "Process 1 encountered an error in pipe ICWD. ERROR%d", errno);
+  				    }
+		      }
+
+          else{
+            jobpids[jobs] = pid_1;
+            jobs++;
+            printf("[%d] %d\n", jobs, pid_1);
+          }
+  	   }
+    }
+  	else{
+		puts("Executable does not exist in current working directory");
+  	}
 	}
 
 	//Outside CWD, must use PATH
@@ -624,10 +642,17 @@ void run_exec( command_t* cmd, char* tokens ){
       				}
 
     				}
-
-    				if ((waitpid(pid_1, &status, 0)) == -1) {
-    		 			fprintf(stderr, "Process 1 encountered an error OCWD. ERROR%d", errno);
-  					}
+            //only wait if it isn't a background process
+            if(!background){
+              if ((waitpid(pid_1, &status, 0)) == -1) {
+          			fprintf(stderr, "Process 1 encountered an error ICWD. ERROR%d", errno);
+        				}
+        		}
+            else{
+              jobpids[jobs] = pid_1;
+              jobs++;
+              printf("[%d] %d\n", jobs, pid_1);
+            }
   				}
   				//piping
 				else{
@@ -654,9 +679,17 @@ void run_exec( command_t* cmd, char* tokens ){
              read(pfd1[0], tempArgs, MAX_COMMAND_LENGTH);
   					 exec_default(temp2, tempArgs, tempCMD, background);
   				 }
-    			 if ((waitpid(pid_1, &status, 0)) == -1) {
-    					fprintf(stderr, "Process 1 encountered an error in pipe OCWD. ERROR%d", errno);
-  					}
+           //only wait if it isn't a background process
+           if(!background){
+     		      if ((waitpid(pid_1, &status, 0)) == -1) {
+   			          fprintf(stderr, "Process 1 encountered an error in pipe ICWD. ERROR%d", errno);
+   				    }
+ 		       }
+           else{
+             jobpids[jobs] = pid_1;
+             jobs++;
+             printf("[%d] %d\n", jobs, pid_1);
+           }
 				}
 
 			}
@@ -685,16 +718,26 @@ void run_exec( command_t* cmd, char* tokens ){
 void exec_greaterThan(char* command, char* args, char* output, char* tokens, bool back){
 	FILE *fp;
 	fp = fopen(output, "w");
-
 	dup2(fileno(fp), STDOUT_FILENO);
 	//attemp to execute
-	if ( (execl(command, command, args, (char *)0)) < 0) {
-		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
-		fclose(fp);
-   	return EXIT_FAILURE;
-  	}
-  	fclose(fp);
-  	exit(0);
+  if(back){
+    if ( (execl(command, command, args, (char *)0)) < 0) {
+  		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+      fclose(fp);
+      return EXIT_FAILURE;
+    }
+    fclose(fp);
+    exit(0);
+  }
+	else{
+    if ( (execl(command, command, args, (char *)0)) < 0) {
+  		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+  		fclose(fp);
+     	return EXIT_FAILURE;
+    	}
+    	fclose(fp);
+    	exit(0);
+  }
 }
 
 //**************************************************************************
@@ -706,22 +749,45 @@ void exec_lessThan(char* command, char* args, char* output, char* tokens, bool b
 
 	dup2(fileno(fp), STDIN_FILENO);
 	//attempt to execute
-	if ( (execl(command, command, args, (char *)0)) < 0) {
-		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
-		fclose(fp);
-   	return EXIT_FAILURE;
-  	}
- 	fclose(fp);
- 	exit(0);
+  if(back){
+    if ( (execl(command, command, args, (char *)0)) < 0) {
+  		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+      fclose(fp);
+      return EXIT_FAILURE;
+    }
+    fclose(fp);
+    exit(0);
+  }
+	else{
+      if ( (execl(command, command, args, (char *)0)) < 0) {
+  		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+  		fclose(fp);
+     	return EXIT_FAILURE;
+    	}
+   	fclose(fp);
+   	exit(0);
+  }
 }
 
 //**************************************************************************
 //execute default executable
 //**************************************************************************
 void exec_default(char* command, char* args, char* tokens, bool back){
-	if ( (execl(command, command, args, (char *)0)) < 0) {
-		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
-    return EXIT_FAILURE;
-  	}
-  	exit(0);
+  if(back){
+    if ( (execl(command, command, args, (char *)0)) < 0) {
+  		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+      return EXIT_FAILURE;
+    }
+    fclose("/dev/null");
+    fopen(STDOUT_FILENO, "r");
+    exit(0);
+  }
+  else{
+    if ( (execl(command, command, args, (char *)0)) < 0) {
+  		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+      return EXIT_FAILURE;
+    	}
+    exit(0);
+  }
+
 }
