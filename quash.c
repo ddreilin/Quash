@@ -373,8 +373,24 @@ void run_exec( command_t* cmd, char* tokens ){
 					if(moreArgs){
 						strcat(temp2," ");
 					}
-					strcat(temp2, tokens2);
-					tokens2 = strtok(NULL, " ");
+          //if it is a backgroun operation
+          if (!strcmp(tokens2, "&")) {
+            background = true;
+            special = true;
+            tokens2 = strtok(NULL, " ");
+            if(tokens2 != NULL){
+              puts("argument after &");
+              return;
+            }
+            puts("Background operation!");
+          }
+
+          //treat as an argument
+          else{
+            strcat(temp2, tokens2);
+  					tokens2 = strtok(NULL, " ");
+          }
+
 					moreArgs = true;
 				}
 				//adds special character argument
@@ -386,8 +402,20 @@ void run_exec( command_t* cmd, char* tokens ){
 		tokens2 = strtok(NULL, " ");
 		//If not null after a special character
 		if( tokens2 != NULL) {
-				puts("invalid syntax");
-				return;
+        //background with special character
+        if (!strcmp(tokens2, "&")) {
+          background = true;
+          tokens2 = strtok(NULL, " ");
+          if(tokens2 != NULL){
+            puts("argument after &");
+            return;
+          }
+          puts("Background operation!");
+        }
+        else{
+          puts("invalid syntax");
+  				return;
+        }
 		}
 		//make sure the executable exists
 		if(access(temp, F_OK) == 0){
@@ -398,20 +426,20 @@ void run_exec( command_t* cmd, char* tokens ){
 					if(greaterThan){
 						strcat(tempCWD, "/");
 						strcat(tempCWD, temp3);
-						exec_greaterThan(temp, temp2, tempCWD, tokens);
+						exec_greaterThan(temp, temp2, tempCWD, tokens, background);
 					}
 					//< redirection
 					else if(lessThan){
 						strcat(tempCWD, "/");
 						strcat(tempCWD, temp3);
-						exec_lessThan(temp, temp2, tempCWD, tokens);
+						exec_lessThan(temp, temp2, tempCWD, tokens, background);
 					}
 					//default execution
 					else{
             puts(temp);
             puts(temp2);
             puts(tokens);
-						exec_default(temp, temp2, tokens);
+						exec_default(temp, temp2, tokens, background);
       			}
     			}
    			if ((waitpid(pid_1, &status, 0)) == -1) {
@@ -427,7 +455,7 @@ void run_exec( command_t* cmd, char* tokens ){
   				if (pid_1 == 0) {
   					close(pfd1[0]);
   					dup2(pfd1[1], STDOUT_FILENO);
-  					exec_default(temp, temp2, tokens);
+  					exec_default(temp, temp2, tokens, background);
             exit(0);
   				}
 
@@ -439,7 +467,7 @@ void run_exec( command_t* cmd, char* tokens ){
   					strcat(temp, "/");
   					strcat(temp, temp3);
             read(pfd1[0], temp2, MAX_COMMAND_LENGTH);
-  					exec_default(temp, temp2 , tokens);
+  					exec_default(temp, temp2 , tokens, background);
             exit(0);
   				}
 
@@ -514,8 +542,22 @@ void run_exec( command_t* cmd, char* tokens ){
 					if(moreArgs){
 						strcat(tempArgs," ");
 					}
-					strcat(tempArgs, tokens2);
-					tokens2 = strtok(NULL, " ");
+          //background operation
+          if (!strcmp(tokens2, "&")) {
+            background = true;
+            special = true;
+            tokens2 = strtok(NULL, " ");
+            if(tokens2 != NULL){
+              puts("argument after &");
+              return;
+            }
+            puts("Background operation!");
+          }
+          //else treat as argument
+          else{
+            strcat(tempArgs, tokens2);
+  					tokens2 = strtok(NULL, " ");
+          }
 					moreArgs = true;
 				}
 
@@ -528,8 +570,20 @@ void run_exec( command_t* cmd, char* tokens ){
 		tokens2 = strtok(NULL, " ");
 		//If not null after a special character
 		if( tokens2 != NULL) {
-				puts("invalid syntax");
-				return;
+        //background with special character
+        if (!strcmp(tokens2, "&")) {
+          background = true;
+          tokens2 = strtok(NULL, " ");
+          if(tokens2 != NULL){
+            puts("argument after &");
+            return;
+          }
+          puts("Background operation!");
+        }
+        else{
+          puts("invalid syntax");
+  				return;
+        }
 		}
 
 
@@ -556,18 +610,18 @@ void run_exec( command_t* cmd, char* tokens ){
 						//> redirection
 						if(greaterThan){
 							strcat(tempCWD, temp3);
-							exec_greaterThan(temp2, tempArgs, tempCWD, tempCMD);
+							exec_greaterThan(temp2, tempArgs, tempCWD, tempCMD, background);
 						}
 						//< redirection
 						else if(lessThan){
 							strcat(tempCWD, "/");
 							strcat(tempCWD, temp3);
-							exec_lessThan(temp2, tempArgs, tempCWD, tempCMD);
+							exec_lessThan(temp2, tempArgs, tempCWD, tempCMD, background);
 							ran = true;
 						}
 						//default execution
 						else{
-							exec_default(temp2, tempArgs, tempCMD);
+							exec_default(temp2, tempArgs, tempCMD, background);
       				}
 
     				}
@@ -585,7 +639,7 @@ void run_exec( command_t* cmd, char* tokens ){
   				if (pid_1 == 0) {
   					close(pfd1[0]);
   					dup2(pfd1[1], STDOUT_FILENO);
-  					exec_default(temp2, tempArgs, tempCMD);
+  					exec_default(temp2, tempArgs, tempCMD, background);
             exit(0);
   				}
 
@@ -598,7 +652,7 @@ void run_exec( command_t* cmd, char* tokens ){
   					 strcat(temp2, temp3);
   					 //temp ARGS needs to be the output of first fork.
              read(pfd1[0], tempArgs, MAX_COMMAND_LENGTH);
-  					 exec_default(temp2, tempArgs, tempCMD);
+  					 exec_default(temp2, tempArgs, tempCMD, background);
   				 }
     			 if ((waitpid(pid_1, &status, 0)) == -1) {
     					fprintf(stderr, "Process 1 encountered an error in pipe OCWD. ERROR%d", errno);
@@ -628,7 +682,7 @@ void run_exec( command_t* cmd, char* tokens ){
 //change program to write output to file
 //**************************************************************************
 
-void exec_greaterThan(char* command, char* args, char* output, char* tokens){
+void exec_greaterThan(char* command, char* args, char* output, char* tokens, bool back){
 	FILE *fp;
 	fp = fopen(output, "w");
 
@@ -646,7 +700,7 @@ void exec_greaterThan(char* command, char* args, char* output, char* tokens){
 //**************************************************************************
 //change program to read in text from file
 //**************************************************************************
-void exec_lessThan(char* command, char* args, char* output, char* tokens){
+void exec_lessThan(char* command, char* args, char* output, char* tokens, bool back){
 	FILE *fp;
 	fp = fopen(output, "r");
 
@@ -664,7 +718,7 @@ void exec_lessThan(char* command, char* args, char* output, char* tokens){
 //**************************************************************************
 //execute default executable
 //**************************************************************************
-void exec_default(char* command, char* args, char* tokens){
+void exec_default(char* command, char* args, char* tokens, bool back){
 	if ( (execl(command, command, args, (char *)0)) < 0) {
 		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
     return EXIT_FAILURE;

@@ -138,7 +138,7 @@ void run_exec( command_t* cmd, char* tokens );
  *
  *  @return void
  */
-void exec_greaterThan(char* command, char* args, char* output, char* tokens);
+void exec_greaterThan(char* command, char* args, char* output, char* tokens, bool back);
 
 /**
  *  Run executable such that the input of the program is read from a file
@@ -150,7 +150,7 @@ void exec_greaterThan(char* command, char* args, char* output, char* tokens);
  *
  *  @return void
  */
-void exec_lessThan(char* command, char* args, char* output, char* tokens);
+void exec_lessThan(char* command, char* args, char* output, char* tokens, bool back);
 
 
 /**
@@ -164,6 +164,6 @@ void exec_lessThan(char* command, char* args, char* output, char* tokens);
  *
  *  @return void
  */
-void exec_default(char* command, char* args, char* tokens);
+void exec_default(char* command, char* args, char* tokens, bool back);
 
 #endif // QUASH_H
