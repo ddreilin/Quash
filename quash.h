@@ -135,6 +135,7 @@ void run_exec( command_t* cmd, char* tokens );
  *  @param args Arguments for executeable
  *  @param output Output of program
  *  @param tokens A token
+ *  @param back background command?
  *
  *  @return void
  */
@@ -147,6 +148,7 @@ void exec_greaterThan(char* command, char* args, char* output, char* tokens, boo
  *  @param args Arguments for executeable
  *  @param output Output of program
  *  @param tokens Token
+ *  @param back background command?
  *
  *  @return void
  */
@@ -161,6 +163,7 @@ void exec_lessThan(char* command, char* args, char* output, char* tokens, bool b
  *  @param args Arguments for executeable
  *  @param output Output of program
  *  @param tokens A token
+ *  @param back background command?
  *
  *  @return void
  */

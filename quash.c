@@ -36,9 +36,14 @@
 // to private in other languages.
 static bool running;
 
+//**************************************************************************
+// int array to hold background job pids
+// **************************************************************************
+static int jobpids [MAX_COMMAND_LENGTH];
+//**************************************************************************
+// int to hold how many background jobs have occured
+// **************************************************************************
 static jobs = 0;
-static int jobpids [10];
-
 //**************************************************************************
 // char array to hold value of $HOME
 // **************************************************************************
@@ -200,7 +205,6 @@ void manager(command_t* cmd ){
 // function change directory
 //**************************************************************************
 void run_cd( char* tokens ){
-	puts("cd function");
 	tokens = strtok(NULL, "");
 	//go to home
 	if(tokens == NULL){
@@ -236,7 +240,6 @@ void run_cd( char* tokens ){
 // function to set variable values
 //**************************************************************************
 void run_set( char* tokens ){
-	puts("set function");
 	tokens = strtok(NULL, "=");
 	//PATH variable
 	if (!strcmp(tokens, "PATH")){
@@ -261,8 +264,6 @@ void run_set( char* tokens ){
 //function to execute echo
 //**************************************************************************
 void run_echo( char* tokens){
-	puts("echo function");
-
 	tokens = strtok(NULL, "");
 	//PATH variable
 	if (!strcmp(tokens, "$PATH")){
@@ -294,7 +295,9 @@ void run_pwd(){
 //function to execute jobs
 //**************************************************************************
 void run_jobs(){
-	puts("jobs function");
+  for(int i = 0; i < jobs; i++){
+    printf("[%d] %d\n", i+1, jobpids[i]);
+  }
 }
 
 //**************************************************************************
@@ -343,7 +346,6 @@ void run_exec( command_t* cmd, char* tokens ){
 						puts("Missing argument after >");
 						return;
 					}
-					puts("> execution");
 					greaterThan = true;
 				}
 				//checks for <
@@ -354,7 +356,6 @@ void run_exec( command_t* cmd, char* tokens ){
 						puts("Missing argument after <");
 						return;
 					}
-					puts("< execution");
 					lessThan = true;
 				}
 				//checks for |
@@ -365,7 +366,6 @@ void run_exec( command_t* cmd, char* tokens ){
 						puts("Missing argument after |");
 						return;
 					}
-					puts("| execution");
 					execPipe = true;
 				}
 				//adds arguments
@@ -382,7 +382,6 @@ void run_exec( command_t* cmd, char* tokens ){
               puts("argument after &");
               return;
             }
-            puts("Background operation!");
           }
 
           //treat as an argument
@@ -410,7 +409,6 @@ void run_exec( command_t* cmd, char* tokens ){
             puts("argument after &");
             return;
           }
-          puts("Background operation!");
         }
         else{
           puts("invalid syntax");
@@ -492,7 +490,7 @@ void run_exec( command_t* cmd, char* tokens ){
   	   }
     }
   	else{
-		puts("Executable does not exist in current working directory");
+		    puts("Executable does not exist in current working directory");
   	}
 	}
 
@@ -524,7 +522,6 @@ void run_exec( command_t* cmd, char* tokens ){
 						puts("Missing argument after >");
 						return;
 					}
-					puts("> execution");
 					greaterThan = true;
 				}
 
@@ -536,7 +533,6 @@ void run_exec( command_t* cmd, char* tokens ){
 						puts("Missing argument after <");
 						return;
 					}
-					puts("< execution");
 					lessThan = true;
 				}
 
@@ -548,7 +544,6 @@ void run_exec( command_t* cmd, char* tokens ){
 						puts("Missing argument after |");
 						return;
 					}
-					puts("| execution");
 					execPipe = true;
 				}
 
@@ -566,7 +561,6 @@ void run_exec( command_t* cmd, char* tokens ){
               puts("argument after &");
               return;
             }
-            puts("Background operation!");
           }
           //else treat as argument
           else{
@@ -593,7 +587,6 @@ void run_exec( command_t* cmd, char* tokens ){
             puts("argument after &");
             return;
           }
-          puts("Background operation!");
         }
         else{
           puts("invalid syntax");
@@ -721,6 +714,8 @@ void exec_greaterThan(char* command, char* args, char* output, char* tokens, boo
 	dup2(fileno(fp), STDOUT_FILENO);
 	//attemp to execute
   if(back){
+    fclose(STDIN_FILENO);
+		fopen("/dev/null", "r");
     if ( (execl(command, command, args, (char *)0)) < 0) {
   		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
       fclose(fp);
@@ -750,6 +745,8 @@ void exec_lessThan(char* command, char* args, char* output, char* tokens, bool b
 	dup2(fileno(fp), STDIN_FILENO);
 	//attempt to execute
   if(back){
+    fclose(STDIN_FILENO);
+		fopen("/dev/null", "r");
     if ( (execl(command, command, args, (char *)0)) < 0) {
   		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
       fclose(fp);
@@ -774,12 +771,12 @@ void exec_lessThan(char* command, char* args, char* output, char* tokens, bool b
 //**************************************************************************
 void exec_default(char* command, char* args, char* tokens, bool back){
   if(back){
+    fclose(STDIN_FILENO);
+		fopen("/dev/null", "r");
     if ( (execl(command, command, args, (char *)0)) < 0) {
   		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
       return EXIT_FAILURE;
     }
-    fclose("/dev/null");
-    fopen(STDOUT_FILENO, "r");
     exit(0);
   }
   else{
