@@ -152,18 +152,6 @@ void exec_greaterThan(char* command, char* args, char* output, char* tokens);
  */
 void exec_lessThan(char* command, char* args, char* output, char* tokens);
 
-/**
- *  Run executable such that the output of the first program is the argruments
- *  for the second executable.
- *
- *  @param cmd A command_t structure
- *  @param args Arguments for executeable
- *  @param output Output of program
- *  @param tokens A token
- *
- *  @return void
- */
-void exec_pipe(char* command, char* args, char* output, char* tokens);
 
 /**
  *  Run executable such that the output of the first program is the argruments

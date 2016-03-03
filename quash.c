@@ -131,6 +131,7 @@ int main(int argc, char** argv){
   //initialize variables.
   strcpy(home, "/home/");
   strcpy(path, "/home/:/home/ddreilin/EECS_678/Project1/Quash/");
+  strcat(path, ":/home/hkaustin/EECS_678/project1-quash/quash/Quash/");
 
   getcwd(cwd, sizeof(cwd));
   start();
@@ -437,7 +438,8 @@ void run_exec( command_t* cmd, char* tokens ){
   					strcpy(temp, cwd);
   					strcat(temp, "/");
   					strcat(temp, temp3);
-  					exec_default(temp, temp2, tokens);
+            read(pfd1[0], temp2, MAX_COMMAND_LENGTH);
+  					exec_default(temp, temp2 , tokens);
             exit(0);
   				}
 
@@ -565,9 +567,6 @@ void run_exec( command_t* cmd, char* tokens ){
 						}
 						//default execution
 						else{
-              puts(temp2);
-              puts(tempArgs);
-              puts(tempCMD);
 							exec_default(temp2, tempArgs, tempCMD);
       				}
 
@@ -581,7 +580,7 @@ void run_exec( command_t* cmd, char* tokens ){
 				else{
 					int pfd1[2];
   				pipe(pfd1);
-          bzero(tempArgs, MAX_COMMAND_LENGTH);
+
   				pid_1 = fork();
   				if (pid_1 == 0) {
   					close(pfd1[0]);
@@ -597,10 +596,9 @@ void run_exec( command_t* cmd, char* tokens ){
 
   					 strcpy(temp2, tokens);
   					 strcat(temp2, temp3);
-             puts(temp2);
   					 //temp ARGS needs to be the output of first fork.
-  					 exec_default(temp2, tempArgs , tempCMD);
-             exit(0);
+             read(pfd1[0], tempArgs, MAX_COMMAND_LENGTH);
+  					 exec_default(temp2, tempArgs, tempCMD);
   				 }
     			 if ((waitpid(pid_1, &status, 0)) == -1) {
     					fprintf(stderr, "Process 1 encountered an error in pipe OCWD. ERROR%d", errno);
@@ -663,16 +661,6 @@ void exec_lessThan(char* command, char* args, char* output, char* tokens){
  	exit(0);
 }
 
-//**************************************************************************
-//Output of first program becomes input of second
-//**************************************************************************
-void exec_pipe(char* command, char* args, char* output, char* tokens){
-	if ( (execl(command, command, "-c", (char *)0)) < 0) {
-		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
-   	return EXIT_FAILURE;
-  	}
-  	exit(0);
-}
 //**************************************************************************
 //execute default executable
 //**************************************************************************
