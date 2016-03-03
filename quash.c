@@ -407,11 +407,14 @@ void run_exec( command_t* cmd, char* tokens ){
 					}
 					//default execution
 					else{
+            puts(temp);
+            puts(temp2);
+            puts(tokens);
 						exec_default(temp, temp2, tokens);
       			}
     			}
    			if ((waitpid(pid_1, &status, 0)) == -1) {
-    			fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
+    			fprintf(stderr, "Process 1 encountered an error ICWD. ERROR%d", errno);
   				}
   			}
   			//For piping
@@ -424,6 +427,7 @@ void run_exec( command_t* cmd, char* tokens ){
   					close(pfd1[0]);
   					dup2(pfd1[1], STDOUT_FILENO);
   					exec_default(temp, temp2, tokens);
+            exit(0);
   				}
 
   				pid_2 = fork();
@@ -434,10 +438,11 @@ void run_exec( command_t* cmd, char* tokens ){
   					strcat(temp, "/");
   					strcat(temp, temp3);
   					exec_default(temp, temp2, tokens);
+            exit(0);
   				}
 
     			if ((waitpid(pid_1, &status, 0)) == -1) {
-    			fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
+    			fprintf(stderr, "Process 1 encountered an error in pipe ICWD. ERROR%d", errno);
   				}
     		}
     	}
@@ -514,7 +519,7 @@ void run_exec( command_t* cmd, char* tokens ){
 
 				//adds special character argument
 				else{
-					strcat(temp3, tokens2);
+          strcat(temp3, tokens2);
 				}
 
 		}
@@ -560,41 +565,45 @@ void run_exec( command_t* cmd, char* tokens ){
 						}
 						//default execution
 						else{
+              puts(temp2);
+              puts(tempArgs);
+              puts(tempCMD);
 							exec_default(temp2, tempArgs, tempCMD);
       				}
 
     				}
 
     				if ((waitpid(pid_1, &status, 0)) == -1) {
-    		 			fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
+    		 			fprintf(stderr, "Process 1 encountered an error OCWD. ERROR%d", errno);
   					}
   				}
   				//piping
 				else{
 					int pfd1[2];
-  					pipe(pfd1);
+  				pipe(pfd1);
+          bzero(tempArgs, MAX_COMMAND_LENGTH);
+  				pid_1 = fork();
+  				if (pid_1 == 0) {
+  					close(pfd1[0]);
+  					dup2(pfd1[1], STDOUT_FILENO);
+  					exec_default(temp2, tempArgs, tempCMD);
+            exit(0);
+  				}
 
-  					pid_1 = fork();
-  					if (pid_1 == 0) {
-  						close(pfd1[0]);
-  						dup2(pfd1[1], STDOUT_FILENO);
-  						exec_default(temp2, tempArgs, tempCMD);
-  					}
+  				 pid_2 = fork();
+  				 if (pid_2 == 0) {
+  				 	 close(pfd1[1]);
+  					 dup2(pfd1[0], STDIN_FILENO);
 
-  					pid_2 = fork();
-  					if (pid_2 == 0) {
-  						close(pfd1[1]);
-  						dup2(pfd1[0], STDIN_FILENO);
-
-  						strcpy(temp2, tokens);
-  						strcat(temp2, temp3);
-
-  						//temp ARGS needs to be the output of first fork.
-  						exec_default(temp2, tempArgs , tempCMD);
-  					}
-
-    				if ((waitpid(pid_1, &status, 0)) == -1) {
-    					fprintf(stderr, "Process 1 encountered an error. ERROR%d", errno);
+  					 strcpy(temp2, tokens);
+  					 strcat(temp2, temp3);
+             puts(temp2);
+  					 //temp ARGS needs to be the output of first fork.
+  					 exec_default(temp2, tempArgs , tempCMD);
+             exit(0);
+  				 }
+    			 if ((waitpid(pid_1, &status, 0)) == -1) {
+    					fprintf(stderr, "Process 1 encountered an error in pipe OCWD. ERROR%d", errno);
   					}
 				}
 
@@ -655,7 +664,7 @@ void exec_lessThan(char* command, char* args, char* output, char* tokens){
 }
 
 //**************************************************************************
-//Output of first progrma becomes input of second
+//Output of first program becomes input of second
 //**************************************************************************
 void exec_pipe(char* command, char* args, char* output, char* tokens){
 	if ( (execl(command, command, "-c", (char *)0)) < 0) {
@@ -668,10 +677,9 @@ void exec_pipe(char* command, char* args, char* output, char* tokens){
 //execute default executable
 //**************************************************************************
 void exec_default(char* command, char* args, char* tokens){
-  puts(tokens);
 	if ( (execl(command, command, args, (char *)0)) < 0) {
 		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
-   	return EXIT_FAILURE;
+    return EXIT_FAILURE;
   	}
   	exit(0);
 }
