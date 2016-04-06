@@ -140,6 +140,7 @@ int main(int argc, char** argv){
   strcpy(home, "/home");
   strcpy(path, "/home:/home/ddreilin/EECS_678/Project1/Quash");
   strcat(path, ":/home/hkaustin/EECS_678/project1-quash/quash/Quash");
+  strcat(path, ":/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/usr/lib64/openmpi/bin/:/opt/smlnj/bin/");
 
   getcwd(cwd, sizeof(cwd));
   start();
@@ -714,25 +715,52 @@ void exec_greaterThan(char* command, char* args, char* output, char* tokens, boo
 	dup2(fileno(fp), STDOUT_FILENO);
 	//attemp to execute
   if(back){
-    fclose(STDIN_FILENO);
-		fopen("/dev/null", "r");
-    if ( (execl(command, command, args, (char *)0)) < 0) {
-  		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+    if(args[0] == NULL){
+      fclose(STDIN_FILENO);
+  		fopen("/dev/null", "r");
+      if ( (execl(command, command, (char *)0)) < 0) {
+    		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+        fclose(fp);
+        return EXIT_FAILURE;
+      }
       fclose(fp);
-      return EXIT_FAILURE;
+      exit(0);
     }
-    fclose(fp);
-    exit(0);
+    else{
+      fclose(STDIN_FILENO);
+  		fopen("/dev/null", "r");
+      if ( (execl(command, command, args, (char *)0)) < 0) {
+    		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+        fclose(fp);
+        return EXIT_FAILURE;
+      }
+      fclose(fp);
+      exit(0);
+    }
+
   }
 	else{
-    if ( (execl(command, command, args, (char *)0)) < 0) {
-  		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
-  		fclose(fp);
-     	return EXIT_FAILURE;
-    	}
-    	fclose(fp);
-    	exit(0);
+    if(args[0] == NULL){
+      if ( (execl(command, command, (char *)0)) < 0) {
+    		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+    		fclose(fp);
+       	return EXIT_FAILURE;
+      	}
+      	fclose(fp);
+      	exit(0);
+    }
+
+    else{
+      if ( (execl(command, command, args, (char *)0)) < 0) {
+    		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+    		fclose(fp);
+       	return EXIT_FAILURE;
+      	}
+      	fclose(fp);
+      	exit(0);
+    }
   }
+
 }
 
 //**************************************************************************
@@ -745,24 +773,53 @@ void exec_lessThan(char* command, char* args, char* output, char* tokens, bool b
 	dup2(fileno(fp), STDIN_FILENO);
 	//attempt to execute
   if(back){
-    fclose(STDIN_FILENO);
-		fopen("/dev/null", "r");
-    if ( (execl(command, command, args, (char *)0)) < 0) {
-  		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+    if(args[0] == NULL){
+      fclose(STDIN_FILENO);
+  		fopen("/dev/null", "r");
+      if ( (execl(command, command, (char *)0)) < 0) {
+    		  fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+          fclose(fp);
+          return EXIT_FAILURE;
+      }
       fclose(fp);
-      return EXIT_FAILURE;
+      exit(0);
     }
-    fclose(fp);
-    exit(0);
-  }
-	else{
+
+    else{
+      fclose(STDIN_FILENO);
+  		fopen("/dev/null", "r");
       if ( (execl(command, command, args, (char *)0)) < 0) {
-  		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
-  		fclose(fp);
-     	return EXIT_FAILURE;
+    		  fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+          fclose(fp);
+          return EXIT_FAILURE;
+      }
+      fclose(fp);
+      exit(0);
+    }
+
+  }
+  //foreground
+	else{
+    if(args[0] == NULL){
+      if ( (execl(command, command, (char *)0)) < 0) {
+  		      fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+  		      fclose(fp);
+     	      return EXIT_FAILURE;
     	}
-   	fclose(fp);
-   	exit(0);
+   	  fclose(fp);
+   	  exit(0);
+    }
+
+    else{
+      if ( (execl(command, command, args, (char *)0)) < 0) {
+  		      fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+  		      fclose(fp);
+     	      return EXIT_FAILURE;
+    	}
+   	  fclose(fp);
+   	  exit(0);
+    }
+
   }
 }
 
@@ -773,18 +830,39 @@ void exec_default(char* command, char* args, char* tokens, bool back){
   if(back){
     fclose(STDIN_FILENO);
 		fopen("/dev/null", "r");
-    if ( (execl(command, command, args, (char *)0)) < 0) {
-  		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
-      return EXIT_FAILURE;
+
+    if(args[0] == NULL){
+      if ( (execl(command, command, (char *)0)) < 0) {
+    		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+        return EXIT_FAILURE;
+      }
+      exit(0);
     }
-    exit(0);
+    else{
+      if ( (execl(command, command, args, (char *)0)) < 0) {
+    		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+        return EXIT_FAILURE;
+      }
+      exit(0);
+    }
+
   }
   else{
-    if ( (execl(command, command, args, (char *)0)) < 0) {
-  		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
-      return EXIT_FAILURE;
-    	}
-    exit(0);
+    if(args[0] == NULL){
+      if ( (execl(command, command, (char *)0)) < 0) {
+    		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+        return EXIT_FAILURE;
+      	}
+      exit(0);
+    }
+    else{
+      if ( (execl(command, command, args, (char *)0)) < 0) {
+    		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
+        return EXIT_FAILURE;
+      	}
+      exit(0);
+    }
+
   }
 
 }
