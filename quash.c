@@ -40,6 +40,11 @@ static bool running;
 // int array to hold background job pids
 // **************************************************************************
 static int jobpids [MAX_COMMAND_LENGTH];
+
+//**************************************************************************
+// bool array to hold if current job is valid/running
+// **************************************************************************
+static bool job_valid [MAX_COMMAND_LENGTH];
 //**************************************************************************
 // int to hold how many background jobs have occured
 // **************************************************************************
@@ -60,7 +65,7 @@ char cwd[MAX_COMMAND_LENGTH];
 // pointer to token in a given string,
 // tokens are substrings delimted by second arg of strtok()
 // **************************************************************************
-char* token;
+//char* token;
 
 //*****************************************************************************
 //
@@ -209,7 +214,9 @@ void run_cd( char* tokens ){
 	tokens = strtok(NULL, "");
 	//go to home
 	if(tokens == NULL){
-		chdir(home);
+		if(chdir(home)== 0){
+      strcpy(cwd, home);
+    }
 	}
 	//go to an absolute directory
 	else if(!strncmp(tokens, "/", 1)){
@@ -221,7 +228,9 @@ void run_cd( char* tokens ){
 				strcat(temp, tokens);
 				tokens = strtok(NULL, "/");
 		}
-		chdir(temp);
+		if(chdir(temp) == 0){
+      strcpy(cwd, temp);
+    }
 	}
 	//go to a directory inside current working directory.
 	else{
@@ -233,7 +242,9 @@ void run_cd( char* tokens ){
 				strcat(temp, tokens);
 				tokens = strtok(NULL, "/");
 		}
-		chdir(temp);
+    if(chdir(temp) == 0){
+      strcpy(cwd, temp);
+    }
 	}
 }
 
@@ -297,7 +308,9 @@ void run_pwd(){
 //**************************************************************************
 void run_jobs(){
   for(int i = 0; i < jobs; i++){
-    printf("[%d] %d\n", i+1, jobpids[i]);
+    if(job_valid[i] == true){
+      printf("[%d] %d\n", i+1, jobpids[i]);
+    }
   }
 }
 
@@ -446,6 +459,7 @@ void run_exec( command_t* cmd, char* tokens ){
       			}
           else{
             jobpids[jobs] = pid_1;
+            job_valid[jobs] = true;
             jobs++;
             printf("[%d] %d\n", jobs, pid_1);
           }
@@ -478,13 +492,14 @@ void run_exec( command_t* cmd, char* tokens ){
 
           //only wait if it isn't a background process
           if(!background){
-    		      if ((waitpid(pid_1, &status, 0)) == -1) {
+    		      if ((waitpid(pid_2, &status, 0)) == -1) {
   			          fprintf(stderr, "Process 1 encountered an error in pipe ICWD. ERROR%d", errno);
   				    }
 		      }
 
           else{
             jobpids[jobs] = pid_1;
+            job_valid[jobs] = true;
             jobs++;
             printf("[%d] %d\n", jobs, pid_1);
           }
@@ -506,6 +521,7 @@ void run_exec( command_t* cmd, char* tokens ){
 		char tempCWD [MAX_COMMAND_LENGTH];//copy of current working directory
 		bzero(temp, MAX_COMMAND_LENGTH);
 		bzero(temp2, MAX_COMMAND_LENGTH);
+    bzero(temp3, MAX_COMMAND_LENGTH);
 		bzero(tempArgs, MAX_COMMAND_LENGTH);
 		bzero(tempCMD, MAX_COMMAND_LENGTH);
 		bzero(tempCWD, MAX_COMMAND_LENGTH);
@@ -619,6 +635,7 @@ void run_exec( command_t* cmd, char* tokens ){
 
 						//> redirection
 						if(greaterThan){
+              strcpy(tempCWD, cwd);
               strcat(tempCWD, "/");
 							strcat(tempCWD, temp3);
 							exec_greaterThan(temp2, tempArgs, tempCWD, tempCMD, background);
@@ -636,18 +653,19 @@ void run_exec( command_t* cmd, char* tokens ){
       				}
 
     				}
-            //only wait if it isn't a background process
-            if(!background){
-              if ((waitpid(pid_1, &status, 0)) == -1) {
-          			fprintf(stderr, "Process 1 encountered an error ICWD. ERROR%d", errno);
-        				}
-        		}
-            else{
-              jobpids[jobs] = pid_1;
-              jobs++;
-              printf("[%d] %d\n", jobs, pid_1);
-            }
-  				}
+          //only wait if it isn't a background process
+          if(!background){
+            if ((waitpid(pid_1, &status, 0)) == -1) {
+        			fprintf(stderr, "Process 1 encountered an error ICWD. ERROR%d", errno);
+      				}
+      		}
+          else{
+            jobpids[jobs] = pid_1;
+            job_valid[jobs] = true;
+            jobs++;
+            printf("[%d] %d\n", jobs, pid_1);
+          }
+				}
   				//piping
 				else{
 					int pfd1[2];
@@ -675,12 +693,13 @@ void run_exec( command_t* cmd, char* tokens ){
   				 }
            //only wait if it isn't a background process
            if(!background){
-     		      if ((waitpid(pid_1, &status, 0)) == -1) {
+     		      if ((waitpid(pid_2, &status, 0)) == -1) {
    			          fprintf(stderr, "Process 1 encountered an error in pipe ICWD. ERROR%d", errno);
    				    }
  		       }
            else{
              jobpids[jobs] = pid_1;
+             job_valid[jobs] = true;
              jobs++;
              printf("[%d] %d\n", jobs, pid_1);
            }
@@ -715,6 +734,7 @@ void exec_greaterThan(char* command, char* args, char* output, char* tokens, boo
 	dup2(fileno(fp), STDOUT_FILENO);
 	//attemp to execute
   if(back){
+    int tempJob = jobs;
     if(args[0] == NULL){
       fclose(STDIN_FILENO);
   		fopen("/dev/null", "r");
@@ -828,6 +848,7 @@ void exec_lessThan(char* command, char* args, char* output, char* tokens, bool b
 //**************************************************************************
 void exec_default(char* command, char* args, char* tokens, bool back){
   if(back){
+    int tempJob = jobs;
     fclose(STDIN_FILENO);
 		fopen("/dev/null", "r");
 
@@ -836,6 +857,11 @@ void exec_default(char* command, char* args, char* tokens, bool back){
     		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
         return EXIT_FAILURE;
       }
+      fopen(STDIN_FILENO, "w");
+
+      printf("[%d] %d finished\n", tempJob+1, jobpids[tempJob]);
+
+      job_valid[tempJob] = false;
       exit(0);
     }
     else{
@@ -843,6 +869,9 @@ void exec_default(char* command, char* args, char* tokens, bool back){
     		fprintf(stderr, "\nError execing %s. ERROR#%d\n", tokens ,errno);
         return EXIT_FAILURE;
       }
+      fopen(STDIN_FILENO, "r");
+      printf("[%d] %d finished\n", tempJob+1, jobpids[tempJob]);
+      job_valid[tempJob] = false;
       exit(0);
     }
 
